@@ -1,0 +1,13 @@
+{
+  "VertexDefinition": {
+    "Position": "Position"
+  },
+
+  "Uniforms": {
+    "ProjView": "CameraProjViewPerspective",
+    "Model": "ObjectModelMatrix",
+    "Skybox": "LinearSamplerCube"
+  },
+
+  "Output": "MainSwapchain"
+}

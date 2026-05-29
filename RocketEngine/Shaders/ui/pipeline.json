@@ -1,0 +1,14 @@
+{
+  "VertexDefinition": {
+    "Position": "Position",
+    "Color": "Color",
+    "UV": "UV"
+  },
+
+  "Uniforms": {
+    "Model": "ObjectModelMatrix",
+    "Image": "LinearSampler2D"
+  },
+
+  "Output": "MainSwapchain"
+}

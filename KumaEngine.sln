@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37111.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdriftGame.Desktop", "AdriftGame\AdriftGame.Desktop.csproj", "{EBC3ECC4-4555-4451-BBB1-434333446B81}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KumaEngine", "RocketEngine\KumaEngine.csproj", "{6BA62D9F-785C-4989-B6E8-7A33AE26F706}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Adrift.Resources", "Resources\Adrift.Resources.shproj", "{51A6CCF3-F50B-4BD3-BB48-E890DAEE9A56}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KumaCLI", "RocketCLI\KumaCLI.csproj", "{04400238-9E42-272B-CA8E-55F11D5D371D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EBC3ECC4-4555-4451-BBB1-434333446B81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBC3ECC4-4555-4451-BBB1-434333446B81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBC3ECC4-4555-4451-BBB1-434333446B81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBC3ECC4-4555-4451-BBB1-434333446B81}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BA62D9F-785C-4989-B6E8-7A33AE26F706}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BA62D9F-785C-4989-B6E8-7A33AE26F706}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BA62D9F-785C-4989-B6E8-7A33AE26F706}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BA62D9F-785C-4989-B6E8-7A33AE26F706}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04400238-9E42-272B-CA8E-55F11D5D371D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04400238-9E42-272B-CA8E-55F11D5D371D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04400238-9E42-272B-CA8E-55F11D5D371D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04400238-9E42-272B-CA8E-55F11D5D371D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1EAEBF3A-F269-469E-BDC4-785C443AFC44}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Resources\Resources.projitems*{51a6ccf3-f50b-4bd3-bb48-e890daee9a56}*SharedItemsImports = 13
+		Resources\Resources.projitems*{ebc3ecc4-4555-4451-bbb1-434333446b81}*SharedItemsImports = 5
+	EndGlobalSection
+EndGlobal

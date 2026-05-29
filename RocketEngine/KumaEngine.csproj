@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyVersion>0.0.1.0</AssemblyVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Rendering\KumaLight.cs~RF6747e1cd.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Shaders\ui\pipeline.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Shaders\skybox\pipeline.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AssimpNetter" Version="6.0.4" />
+    <PackageReference Include="KeraLua" Version="1.4.9" />
+    <PackageReference Include="RmlUi.Net" Version="1.0.1" />
+    <PackageReference Include="StbImageSharp" Version="2.30.15" />
+    <PackageReference Include="Veldrid.SPIRV" Version="1.0.15" />
+    <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0" />
+    <PackageReference Include="Veldrid.Utilities" Version="4.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Data\UI\rml.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\UI\rml.rcss">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Shaders\ui\fragment.glsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Shaders\ui\vertex.glsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Shaders\skybox\fragment.glsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Shaders\skybox\vertex.glsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
