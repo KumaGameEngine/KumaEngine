@@ -221,6 +221,8 @@ namespace KumaEngine.Rendering
 
         public byte[] GetBytes(uint vertex)
         {
+            if (vertex >= Points.Count) return MemoryMarshal.AsBytes(stackalloc float[] {1,1,1,1}).ToArray();
+
             Span<float> floats = stackalloc float[] { Points[(int)vertex].X, Points[(int)vertex].Y, Points[(int)vertex].Z, Points[(int)vertex].W };
             Span<byte> bytes = MemoryMarshal.AsBytes(floats);
 
