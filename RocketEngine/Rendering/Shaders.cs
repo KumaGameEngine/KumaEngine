@@ -13,7 +13,7 @@ namespace KumaEngine.Rendering
     {
         static string PreProcess(string file)
         {
-            var src = Regex.Replace(File.ReadAllText(file), @"/\*.*?\*/|//[^\n]*", "", RegexOptions.Singleline);
+            var src = Regex.Replace(File.ReadAllText(file), @"/\*.*?\*/|//[^\n]*", "", RegexOptions.Singleline).Trim();
             var sb = new StringBuilder();
 
             int linesCount = 0;
