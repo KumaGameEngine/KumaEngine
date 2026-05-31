@@ -78,6 +78,7 @@ namespace KumaEngine.API
             lua.PushSafeCFunction(_ =>
             {
                 GameObjectHandles[handle].Destroy();
+                GameObjectHandles.Remove(handle);
                 return 0;
             });
             lua.SetField(-2, "destroy");

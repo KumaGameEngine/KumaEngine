@@ -24,7 +24,7 @@
   <ItemGroup>
     <PackageReference Include="AssimpNetter" Version="6.0.4" />
     <PackageReference Include="KeraLua" Version="1.4.9" />
-    <PackageReference Include="RmlUi.Net" Version="1.0.1" />
+    <PackageReference Include="KumaEngine.RmlUi.Net" Version="1.0.2-beta.4" />
     <PackageReference Include="StbImageSharp" Version="2.30.15" />
     <PackageReference Include="Veldrid.SPIRV" Version="1.0.15" />
     <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0" />

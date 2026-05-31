@@ -15,8 +15,6 @@ namespace KumaEngine
 
         KumaPipeline SkyboxPipeline;
         Model SkyboxModel;
-
-        public Context rmlContext;
         public Game(ApplicationWindow window) : base(window) { }
 
         protected override void CreateResources(ResourceFactory factory)
@@ -41,9 +39,9 @@ namespace KumaEngine
             foreach (var item in Directory.GetFiles(Path.Combine("Data", "Fonts"), "*.ttf"))
                 Rml.LoadFontFace(item);
 
-            rmlContext = Rml.CreateContext("main", new((int)Window.Width, (int)Window.Height))!;
-
             bool first = true;
+
+            DefinitionFile.Init(this);
 
             Window.Resized += () =>
             {
@@ -53,14 +51,9 @@ namespace KumaEngine
                     return;
                 }
 
-                Rml.RemoveContext("main");
-                rmlContext.Dispose();
-                rmlContext = Rml.CreateContext("main", new((int)Window.Width, (int)Window.Height))!;
-
-                if (UIAPI.CurrentDocument != "") UIAPI.ShowCurrentDocument();
+                foreach (var item in UIAPI.UISurfaceHandles)
+                    item.Value.Resize(Window.Width,Window.Height);
             };
-
-            DefinitionFile.Init(this);
 
             SkyboxPipeline = KumaPipeline.FromSet(factory, "skybox");
             SkyboxModel = Model.Create(GraphicsDevice, factory,
@@ -78,9 +71,6 @@ namespace KumaEngine
 
         protected override void Draw(float deltaSeconds)
         {
-            if (rmlContext == null)
-                rmlContext = Rml.CreateContext("main", new((int)Window.Width, (int)Window.Height))!;
-
             GameAPI.GameUpdate(deltaSeconds);
 
             if (LightAPI.UpdateLights)
@@ -106,8 +96,11 @@ namespace KumaEngine
             if (KumaScene.CurrentSkyboxMaterial != null) 
                 SkyboxPipeline.Draw(CommandList,SkyboxModel, KumaScene.CurrentSkyboxMaterial);
 
-            rmlContext.Update();
-            rmlContext.Render();
+            foreach (var item in UIAPI.UISurfaceHandles)
+            {
+                item.Value.Update();
+                item.Value.Render();
+            }
 
             CommandList.End();
 
@@ -119,7 +112,7 @@ namespace KumaEngine
 
         protected override void Closing()
         {
-            Rml.Shutdown();
+            if (UIAPI.UISurfaceHandles.Count > 0) Rml.Shutdown();
         }
     }
 }
