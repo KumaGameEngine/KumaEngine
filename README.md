@@ -30,4 +30,4 @@ dotnet publish
 the kumaCLI executable is in `./RocketCLI/bin/Release/net9.0`.
 
 > [!WARNING]
-> the game engine is currently in a primitive state, it is usable but a lot features are missing.
+> the game engine is currently in a primitive state, it is usable but a lot of features are missing.

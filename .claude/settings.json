@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "deny": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "WebFetch",
+      "WebSearch",
+      "TodoWrite"
+    ]
+  }
+}
