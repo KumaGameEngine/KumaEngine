@@ -14,13 +14,15 @@ namespace KumaEngine.Rendering
     public class Camera
     {
         private float _fov = 1f;
+        private float _refdist = 3f;
         private float _near = .1f;
         private float _far = 1000f;
 
         private Matrix4x4 _viewMatrix;
         private Matrix4x4 _projectionMatrix;
-        public DeviceBuffer _cameraProjViewBuffer;
-        public DeviceBuffer _cameraPosBuffer;
+        public static DeviceBuffer _cameraProjViewBuffer;
+
+        public static DeviceBuffer _cameraPosBuffer;
 
         private Vector3 _position = new Vector3(0, 3, 0);
         private Vector3 _rotation = new Vector3(0, 0, 0);
@@ -33,16 +35,20 @@ namespace KumaEngine.Rendering
         public event Action<Matrix4x4> ProjectionChanged;
         public event Action<Matrix4x4> ViewChanged;
 
+        bool _ortho;
+        public bool Orthographic
+        {
+            get => _ortho; set
+            {
+                _ortho = value;
+                UpdatePerspectiveMatrix();
+            }
+        }
+
         public Camera(float width, float height,ResourceFactory factory)
         {
             _windowWidth = width;
             _windowHeight = height;
-
-            _cameraProjViewBuffer = factory.CreateBuffer(
-                new BufferDescription((uint)(Unsafe.SizeOf<Matrix4x4>() * 2), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
-
-            _cameraPosBuffer = factory.CreateBuffer(
-                new BufferDescription((uint)(Unsafe.SizeOf<Vector3>() + 4), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
             UpdatePerspectiveMatrix();
             UpdateViewMatrix();
@@ -55,7 +61,8 @@ namespace KumaEngine.Rendering
         public Vector3 Rotation { get => _rotation; set { _rotation = value; UpdateViewMatrix(); } }
 
         public float FarDistance { get => _far; set { _far = value; UpdatePerspectiveMatrix(); } }
-        public float FieldOfView => _fov;
+        public float FieldOfView { get => _fov; set { _fov = value; } }
+        public float OrthographicSize { get => _refdist; set { _refdist = value; } }
         public float NearDistance { get => _near; set { _near = value; UpdatePerspectiveMatrix(); } }
 
         public float AspectRatio => _windowWidth / _windowHeight;
@@ -88,7 +95,22 @@ namespace KumaEngine.Rendering
 
         private void UpdatePerspectiveMatrix()
         {
+            if (Orthographic)
+            {
+                UpdateOrthoMatrix();
+                return;
+            }
+
             _projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(_fov, _windowWidth / _windowHeight, _near, _far);
+            ProjectionChanged?.Invoke(_projectionMatrix);
+        }
+        private void UpdateOrthoMatrix()
+        {
+            float coeff = _windowWidth / _windowHeight;
+            float halfh = MathF.Tan(_fov / 2f) * _refdist;
+            float halfw = halfh * coeff;
+
+            _projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(-halfw, halfw, -halfh, halfh, _near, _far);
             ProjectionChanged?.Invoke(_projectionMatrix);
         }
 

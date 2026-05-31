@@ -10,9 +10,17 @@ namespace KumaEngine.Rendering
 
         public static DeviceBuffer PointLightBuffer = null!;
 
+        public static Camera CurrentCamera = null!;
+
         public List<GameObject> GameObjects = new();
         public KumaMaterial SkyboxMat = null!;
         public List<KumaPointLight> PointLights = new();
+        public Camera Camera;
+
+        public KumaScene(Camera cam)
+        {
+            Camera = cam;
+        }
 
         public static void CreateLightBuffers(ResourceFactory factory)
         {
@@ -47,6 +55,8 @@ namespace KumaEngine.Rendering
 
             CurrentPointLights.Clear();
             CurrentPointLights.AddRange(scene.PointLights);
+
+            CurrentCamera = scene.Camera;
 
             CreateLightBuffers(factory);
         }

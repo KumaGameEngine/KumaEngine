@@ -1,4 +1,5 @@
-﻿using KeraLua;
+﻿using Assimp;
+using KeraLua;
 using KumaEngine.Rendering;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Camera = KumaEngine.Rendering.Camera;
 
 namespace KumaEngine.API
 {
@@ -27,7 +29,7 @@ namespace KumaEngine.API
             {
                 var lua = Lua.FromIntPtr(ilua);
 
-                lua.PushCamera(DefinitionFile.Game.Camera);
+                lua.PushCamera(KumaScene.CurrentCamera);
 
                 return 1;
             }),
@@ -52,7 +54,16 @@ namespace KumaEngine.API
         {
             var handle = Random.Shared.Next(int.MinValue, int.MaxValue);
 
-            SceneHandles.Add(handle, new KumaScene());
+            SceneHandles.Add(
+                handle, 
+                new KumaScene(
+                    new Camera(
+                        DefinitionFile.Game.Window.Width, 
+                        DefinitionFile.Game.Window.Height, 
+                        DefinitionFile.Game.ResourceFactory
+                    )
+                )
+            );
 
             lua.NewTable();
 
@@ -95,6 +106,26 @@ namespace KumaEngine.API
                 return 1;
             });
             lua.SetField(-2, "setSkybox");
+
+            lua.NewTable();
+
+            lua.PushSafeCFunction(ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                string key = L.ToString(2);
+                switch (key)
+                {
+                    case "camera":
+                        L.PushCamera(SceneHandles[handle].Camera);
+                        return 1;
+                    default:
+                        L.PushNil();
+                        return 1;
+                }
+            });
+            lua.SetField(-2, "__index");
+
+            lua.SetMetaTable(-2);
         }
 
         public static KumaScene ToScene(this Lua lua,int index)
@@ -128,6 +159,15 @@ namespace KumaEngine.API
                     case "right":
                         L.PushVec3(camera.right);
                         return 1;
+                    case "orthographic":
+                        L.PushBoolean(camera.Orthographic);
+                        return 1;
+                    case "orthoSize":
+                        L.PushNumber(camera.OrthographicSize);
+                        return 1;
+                    case "fov":
+                        L.PushNumber(camera.FieldOfView * (180f / MathF.PI));
+                        return 1;
                     default:
                         L.PushNil();
                         return 1;
@@ -146,6 +186,15 @@ namespace KumaEngine.API
                         break;
                     case "rotation":
                         camera.Rotation = L.ToVec3(3);
+                        break;
+                    case "orthographic":
+                        camera.Orthographic = L.ToBoolean(3);
+                        break;
+                    case "orthoSize":
+                        camera.OrthographicSize = (float)L.ToNumber(3);
+                        break;
+                    case "fov":
+                        camera.FieldOfView = (float)L.ToNumber(3) * (MathF.PI / 180f);
                         break;
                 }
                 return 0;

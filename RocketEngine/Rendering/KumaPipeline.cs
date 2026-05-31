@@ -115,7 +115,7 @@ namespace KumaEngine.Rendering
             {
                 switch (item.Value)
                 {
-                    case RoketPipelineUniforms.CameraProjViewPerspective:
+                    case RoketPipelineUniforms.CameraProjView:
                     case RoketPipelineUniforms.ObjectModelMatrix:
                     case RoketPipelineUniforms.Lights:
                     case RoketPipelineUniforms.CameraPos:
@@ -173,8 +173,8 @@ namespace KumaEngine.Rendering
             {
                 switch (item.Value)
                 {
-                    case RoketPipelineUniforms.CameraProjViewPerspective:
-                        bindableResources.Add(DefinitionFile.Game.Camera._cameraProjViewBuffer);
+                    case RoketPipelineUniforms.CameraProjView:
+                        bindableResources.Add(Camera._cameraProjViewBuffer);
                         break;
                     case RoketPipelineUniforms.ObjectModelMatrix:
                         bindableResources.Add(ret.ModelBuffer);
@@ -183,7 +183,7 @@ namespace KumaEngine.Rendering
                         bindableResources.Add(KumaScene.PointLightBuffer);
                         break;
                     case RoketPipelineUniforms.CameraPos:
-                        bindableResources.Add(DefinitionFile.Game.Camera._cameraPosBuffer);
+                        bindableResources.Add(Camera._cameraPosBuffer);
                         break;
                     default:
                         break;
@@ -217,7 +217,7 @@ namespace KumaEngine.Rendering
 
     public enum RoketPipelineUniforms
     {
-        CameraProjViewPerspective,
+        CameraProjView,
         CameraPos,
         ObjectModelMatrix,
         LinearSamplerCube,

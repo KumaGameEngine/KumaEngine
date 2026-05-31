@@ -14,8 +14,6 @@ namespace KumaEngine.Windowing
 {
     public abstract class KumaApplication
     {
-        public Camera Camera;
-
         public ApplicationWindow Window { get; }
         public GraphicsDevice GraphicsDevice { get; private set; }
         public ResourceFactory ResourceFactory { get; private set; }
@@ -59,7 +57,7 @@ namespace KumaEngine.Windowing
 
         protected virtual void HandleWindowResize()
         {
-            Camera.WindowResized(Window.Width, Window.Height);
+            KumaScene.CurrentCamera.WindowResized(Window.Width, Window.Height);
         }
 
         protected virtual void OnKeyDown(KeyEvent ke) { }

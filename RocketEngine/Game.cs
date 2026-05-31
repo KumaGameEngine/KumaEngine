@@ -1,10 +1,11 @@
-﻿using RmlUiNet;
-using KumaEngine.API;
+﻿using KumaEngine.API;
 using KumaEngine.Rendering;
 using KumaEngine.Rendering.VertexTypes;
 using KumaEngine.UI;
 using KumaEngine.Windowing;
+using RmlUiNet;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Veldrid;
 
 namespace KumaEngine
@@ -19,8 +20,14 @@ namespace KumaEngine
 
         protected override void CreateResources(ResourceFactory factory)
         {
-            Camera = new Camera(Window.Width, Window.Height,factory);
-            Camera.Position = new Vector3(0,0,5);
+            //Camera = new Camera(Window.Width, Window.Height,factory);
+            //Camera.Position = new Vector3(0,0,5);
+
+            Camera._cameraProjViewBuffer = factory.CreateBuffer(
+                new BufferDescription((uint)(Unsafe.SizeOf<Matrix4x4>() * 2), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+
+            Camera._cameraPosBuffer = factory.CreateBuffer(
+                new BufferDescription((uint)(Unsafe.SizeOf<Vector3>() + 4), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
             KumaScene.CreateLightBuffers(factory);
 
@@ -73,6 +80,8 @@ namespace KumaEngine
         {
             GameAPI.GameUpdate(deltaSeconds);
 
+            if (KumaScene.CurrentCamera == null) return;
+
             if (LightAPI.UpdateLights)
             {
                 KumaScene.UploadLights(GraphicsDevice);
@@ -81,7 +90,7 @@ namespace KumaEngine
 
             CommandList.Begin();
 
-            Camera.Update(CommandList);
+            KumaScene.CurrentCamera.Update(CommandList);
 
             CommandList.SetFramebuffer(MainSwapchain.Framebuffer);
             CommandList.ClearColorTarget(0, RgbaFloat.White);
