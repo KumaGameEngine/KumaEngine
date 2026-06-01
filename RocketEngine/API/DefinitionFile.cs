@@ -36,6 +36,8 @@ namespace KumaEngine.API
 
             lua = new();
 
+            lua.DoString($"package.path = '{Path.Combine("Data","Scripts", "?.lua").Replace("\\", "/")}';");
+
             Vector3API.RegisterMeta(lua);
 
             lua.GetGlobal("package");
@@ -54,11 +56,13 @@ namespace KumaEngine.API
             lua.SetField(-2, "engine");
             lua.Pop(2);
 
-            lua.DoString($@"
-                package.path = './Data/Scripts/?.lua;'
-            ");
+            if (lua.DoFile(Path.Combine("Data", "Scripts", "main.lua")))
+            {
+                string errorMsg = lua.ToString(-1);
+                Console.WriteLine($"Detected a Lua exception: {errorMsg}");
 
-            lua.DoFile(Path.Combine("Data","Scripts", "main.lua"));
+                lua.Pop(1);
+            }
         }
 
         public static LuaRegister RegisterFunction(string name, LuaFunction function) => new LuaRegister()

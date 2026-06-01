@@ -57,18 +57,13 @@ namespace KumaEngine.Windowing
 
         protected virtual void HandleWindowResize()
         {
-            KumaScene.CurrentCamera.WindowResized(Window.Width, Window.Height);
+            if (KumaScene.CurrentCamera != null)
+                KumaScene.CurrentCamera.WindowResized(Window.Width, Window.Height);
         }
 
         protected virtual void OnKeyDown(KeyEvent ke) { }
 
         public Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);
-
-        public Shader LoadShader(ResourceFactory factory, string set, ShaderStages stage, string entryPoint)
-        {
-            string name = $"{set}-{stage.ToString().ToLower()}.{GetExtension(factory.BackendType)}";
-            return factory.CreateShader(new ShaderDescription(stage, ReadEmbeddedAssetBytes(name), entryPoint));
-        }
 
         public byte[] ReadEmbeddedAssetBytes(string name)
         {
