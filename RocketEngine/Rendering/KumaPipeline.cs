@@ -1,16 +1,18 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using KumaEngine.API;
+﻿using KumaEngine.API;
 using KumaEngine.Rendering.VertexTypes;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Veldrid;
+using ResourceSet = Veldrid.ResourceSet;
 
 namespace KumaEngine.Rendering
 {
@@ -57,23 +59,75 @@ namespace KumaEngine.Rendering
 
     public class KumaPipeline
     {
+        public List<KumaPass> Passes = new();
+        public DeviceBuffer ModelBuffer;
+        public Dictionary<string, RoketVertexElement> VertexDefinition { get; set; } = new();
+
+        public KumaPipeline(ResourceFactory factory)
+        {
+            ModelBuffer = factory.CreateBuffer(new(RocketModelScheme.Size, BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+        }
+
+        public static KumaPipeline FromSet(ResourceFactory factory, string set)
+        {
+            var settings = new JsonSerializerSettings
+            {
+                Converters = [new StringEnumConverter()]
+            };
+
+            var defpath = Path.Combine("Shaders", set, "pipeline.json");
+
+            if (!File.Exists(defpath)) throw new Exception("Could not find pipeline definition file");
+
+            var result = JsonConvert.DeserializeObject<PipelineFile>(File.ReadAllText(defpath), settings);
+
+            List<VertexElementDescription> layoutElements = new();
+            foreach (var item in result.VertexDefinition)
+                layoutElements.Add(new(item.Key, item.Value.ToFormat(), VertexElementSemantic.TextureCoordinate));
+
+            var pipeline = new KumaPipeline(factory);
+
+            pipeline.VertexDefinition = result.VertexDefinition;
+
+            foreach (var item in result.Passes)
+                pipeline.Passes.Add(KumaPass.FromFile(factory,set,item,pipeline,layoutElements));
+
+            return pipeline;
+        }
+
+        public void Draw(CommandList list, Model model, KumaMaterial mat)
+        {
+            foreach (var item in Passes)
+            {
+                list.SetPipeline(item.Pipeline);
+
+                list.SetGraphicsResourceSet(0, item.Resources);
+
+                if (mat != null)
+                    for (int i = 0; i < mat.Resources.Count; i++) list.SetGraphicsResourceSet((uint)i + 1, mat.Resources[i]);
+
+                list.SetVertexBuffer(0, model.VertexBuffer);
+                list.SetIndexBuffer(model.IndexBuffer, IndexFormat.UInt32);
+
+                list.DrawIndexed(model.IndexCount);
+            }
+        }
+    }
+
+    public class KumaPass
+    {
         GraphicsPipelineDescription Descriptor;
         public Pipeline Pipeline;
 
         public List<TextureView> Textures { get; set; } = new();
         public ResourceSet Resources { get; set; } = null!;
-        public Dictionary<string, RoketVertexElement> VertexDefinition { get; set; } = new();
 
         public static Dictionary<string, OutputDescription> SwapChains = new();
 
-        public DeviceBuffer ModelBuffer;
-
-        public KumaPipeline(ResourceFactory factory,GraphicsPipelineDescription pipelineDescription) 
+        public KumaPass(ResourceFactory factory,GraphicsPipelineDescription pipelineDescription) 
         {
             Descriptor = pipelineDescription;
             Pipeline = factory.CreateGraphicsPipeline(ref Descriptor);
-
-            ModelBuffer = factory.CreateBuffer(new(RocketModelScheme.Size, BufferUsage.UniformBuffer | BufferUsage.Dynamic));
         }
 
         public void Draw(CommandList list,Model model,KumaMaterial mat)
@@ -91,23 +145,8 @@ namespace KumaEngine.Rendering
             list.DrawIndexed(model.IndexCount);
         }
 
-        public static KumaPipeline FromSet(ResourceFactory factory,string set)
+        public static KumaPass FromFile(ResourceFactory factory,string set,PassFile result,KumaPipeline pipeline, List<VertexElementDescription> layoutElements)
         {
-            var settings = new JsonSerializerSettings
-            {
-                Converters = [ new StringEnumConverter() ]
-            };
-
-            var defpath = Path.Combine("Shaders", set, "pipeline.json");
-
-            if (!File.Exists(defpath)) throw new Exception("Could not find pipeline definition file");
-
-            var result = JsonConvert.DeserializeObject<PipelineFile>(File.ReadAllText(defpath), settings);
-
-            List<VertexElementDescription> layoutElements = new();
-            foreach (var item in result.VertexDefinition)
-                layoutElements.Add(new(item.Key,item.Value.ToFormat(),VertexElementSemantic.TextureCoordinate));
-
             List<ResourceLayoutElementDescription> resourceLayoutElementDescriptions = new();
             List<ResourceLayoutElementDescription> textureLayoutElementDescriptions = new();
 
@@ -142,7 +181,7 @@ namespace KumaEngine.Rendering
             ResourceLayoutDescription resourceLayoutDescription1 = new ResourceLayoutDescription(textureLayoutElementDescriptions.ToArray());
             ResourceLayout textureLayout = factory.CreateResourceLayout(resourceLayoutDescription1);
 
-            var ret = new KumaPipeline(factory, new()
+            var ret = new KumaPass(factory, new()
             {
                 BlendState = BlendStateDescription.SingleAlphaBlend,
                 DepthStencilState = new DepthStencilStateDescription(
@@ -160,12 +199,10 @@ namespace KumaEngine.Rendering
                 ResourceLayouts = [sharedLayout, textureLayout],
                 ShaderSet = new ShaderSetDescription(
                     vertexLayouts: [new(layoutElements.ToArray())],
-                    shaders: Shaders.FromSPIRV(factory, set)
+                    shaders: Shaders.FromSPIRVVertFrag(factory, set, result.VertexShader, result.FragmentShader)
                 ),
                 Outputs = SwapChains[result.Output]
             });
-
-            ret.VertexDefinition = result.VertexDefinition;
 
             List<BindableResource> bindableResources = new();
 
@@ -177,7 +214,7 @@ namespace KumaEngine.Rendering
                         bindableResources.Add(Camera._cameraProjViewBuffer);
                         break;
                     case RoketPipelineUniforms.ObjectModelMatrix:
-                        bindableResources.Add(ret.ModelBuffer);
+                        bindableResources.Add(pipeline.ModelBuffer);
                         break;
                     case RoketPipelineUniforms.Lights:
                         bindableResources.Add(KumaScene.PointLightBuffer);
@@ -201,7 +238,7 @@ namespace KumaEngine.Rendering
 
     public static class RocketCommandListExtensions
     {
-        public static void SetPipeline(this CommandList list, KumaPipeline pipeline) => list.SetPipeline(pipeline.Pipeline);
+        public static void SetPass(this CommandList list, KumaPass pipeline) => list.SetPipeline(pipeline.Pipeline);
 
         public static VertexElementFormat ToFormat(this RoketVertexElement element) => element switch
         {
@@ -237,9 +274,17 @@ namespace KumaEngine.Rendering
 
     public class PipelineFile
     {
+        public List<PassFile> Passes = new();
+        public Dictionary<string, RoketVertexElement> VertexDefinition = new();
+    }
+
+    public class PassFile
+    {
         public string Output = "MainSwapchain";
+        public string VertexShader = "";
+        public string FragmentShader = "";
+        public string ComputeShader = "";
 
         public Dictionary<string, RoketPipelineUniforms> Uniforms = new();
-        public Dictionary<string, RoketVertexElement> VertexDefinition = new();
     }
 }

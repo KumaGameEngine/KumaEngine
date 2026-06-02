@@ -3,11 +3,19 @@
     "Position": "Position"
   },
 
-  "Uniforms": {
-    "ProjView": "CameraProjView",
-    "Model": "ObjectModelMatrix",
-    "Skybox": "LinearSamplerCube"
-  },
+  "Passes": [
+    {
+      "Type": "Graphics",
+      "VertexShader": "vertex.glsl",
+      "FragmentShader": "fragment.glsl",
 
-  "Output": "MainSwapchain"
+      "Uniforms": {
+        "ProjView": "CameraProjView",
+        "Model": "ObjectModelMatrix",
+        "Skybox": "LinearSamplerCube"
+      },
+
+      "Output": "MainSwapchain"
+    }
+  ]
 }

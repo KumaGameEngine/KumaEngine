@@ -31,7 +31,7 @@ namespace KumaEngine
 
             KumaScene.CreateLightBuffers(factory);
 
-            KumaPipeline.SwapChains.Add("MainSwapchain", MainSwapchain.Framebuffer.OutputDescription);;
+            KumaPass.SwapChains.Add("MainSwapchain", MainSwapchain.Framebuffer.OutputDescription);;
 
             CommandList = factory.CreateCommandList();
 

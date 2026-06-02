@@ -44,7 +44,13 @@ namespace KumaEngine.Rendering
 
         static byte[] PreProcessBytes(string file) => Encoding.Default.GetBytes(PreProcess(file));
 
-        public static Shader[] FromSPIRV(ResourceFactory factory, string ShaderPackName) =>
+        public static Shader[] FromSPIRVVertFrag(ResourceFactory factory, string ShaderPackName, string vert,string frag) =>
+            factory.CreateFromSpirv(
+                new(ShaderStages.Vertex, PreProcessBytes(Path.Combine("Shaders", ShaderPackName, vert)), "main"),
+                new(ShaderStages.Fragment, PreProcessBytes(Path.Combine("Shaders", ShaderPackName, frag)), "main"),
+                new()
+            );
+        public static Shader[] FromSPIRVCompute(ResourceFactory factory, string ShaderPackName) =>
             factory.CreateFromSpirv(
                 new(ShaderStages.Vertex, PreProcessBytes(Path.Combine("Shaders",ShaderPackName,"vertex.glsl")),"main"),
                 new(ShaderStages.Fragment, PreProcessBytes(Path.Combine("Shaders",ShaderPackName,"fragment.glsl")),"main"),

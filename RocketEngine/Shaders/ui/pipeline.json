@@ -5,10 +5,18 @@
     "UV": "UV"
   },
 
-  "Uniforms": {
-    "Model": "ObjectModelMatrix",
-    "Image": "LinearSampler2D"
-  },
+  "Passes": [
+    {
+      "Type": "Graphics",
+      "VertexShader": "vertex.glsl",
+      "FragmentShader": "fragment.glsl",
 
-  "Output": "MainSwapchain"
+      "Uniforms": {
+        "Model": "ObjectModelMatrix",
+        "Image": "LinearSampler2D"
+      },
+
+      "Output": "MainSwapchain"
+    }
+  ]
 }
