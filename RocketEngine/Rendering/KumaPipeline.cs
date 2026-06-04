@@ -63,6 +63,8 @@ namespace KumaEngine.Rendering
         public DeviceBuffer ModelBuffer;
         public Dictionary<string, RoketVertexElement> VertexDefinition { get; set; } = new();
 
+        static Framebuffer PrevSwapchain = null!;
+
         public KumaPipeline(ResourceFactory factory)
         {
             ModelBuffer = factory.CreateBuffer(new(RocketModelScheme.Size, BufferUsage.UniformBuffer | BufferUsage.Dynamic));
@@ -99,6 +101,12 @@ namespace KumaEngine.Rendering
         {
             foreach (var item in Passes)
             {
+                if (PrevSwapchain != item.swapchain.Framebuffer)
+                {
+                    list.SetFramebuffer(item.swapchain.Framebuffer);
+                    PrevSwapchain = item.swapchain.Framebuffer;
+                }
+
                 list.SetPipeline(item.Pipeline);
 
                 list.SetGraphicsResourceSet(0, item.Resources);
@@ -110,6 +118,52 @@ namespace KumaEngine.Rendering
                 list.SetIndexBuffer(model.IndexBuffer, IndexFormat.UInt32);
 
                 list.DrawIndexed(model.IndexCount);
+            }
+        }
+
+        public void Draw(CommandList list, params GameObject[] obj)
+        {
+            foreach (var pass in Passes)
+            {
+                if (PrevSwapchain != pass.swapchain.Framebuffer)
+                {
+                    list.SetFramebuffer(pass.swapchain.Framebuffer);
+                    PrevSwapchain = pass.swapchain.Framebuffer;
+                }
+
+                list.SetPipeline(pass.Pipeline);
+                list.SetGraphicsResourceSet(0, pass.Resources);
+
+                KumaMaterial lastBoundMaterial = null!;
+                DeviceBuffer lastBoundVertexBuffer = null!;
+
+                var sortedObjects = obj
+                    .OrderBy(x => x.Material?.GetHashCode() ?? 0)
+                    .ThenBy(x => x.Model.VertexBuffer.GetHashCode());
+
+                foreach (var gameObject in sortedObjects)
+                {
+                    list.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
+
+                    if (gameObject.Material != null && gameObject.Material != lastBoundMaterial)
+                    {
+                        for (int i = 0; i < gameObject.Material.Resources.Count; i++)
+                        {
+                            list.SetGraphicsResourceSet((uint)i + 1, gameObject.Material.Resources[i]);
+                        }
+                        lastBoundMaterial = gameObject.Material;
+                    }
+
+                    var model = gameObject.Model;
+                    if (model.VertexBuffer != lastBoundVertexBuffer)
+                    {
+                        list.SetVertexBuffer(0, model.VertexBuffer);
+                        list.SetIndexBuffer(model.IndexBuffer, IndexFormat.UInt32);
+                        lastBoundVertexBuffer = model.VertexBuffer;
+                    }
+
+                    list.DrawIndexed(model.IndexCount);
+                }
             }
         }
     }
@@ -124,25 +178,12 @@ namespace KumaEngine.Rendering
 
         public static Dictionary<string, KumaSwapchain> SwapChains = new();
 
+        public KumaSwapchain swapchain;
+
         public KumaPass(ResourceFactory factory,GraphicsPipelineDescription pipelineDescription) 
         {
             Descriptor = pipelineDescription;
             Pipeline = factory.CreateGraphicsPipeline(ref Descriptor);
-        }
-
-        public void Draw(CommandList list,Model model,KumaMaterial mat)
-        {
-            list.SetPipeline(Pipeline);
-
-            list.SetGraphicsResourceSet(0, Resources);
-
-            if (mat != null)
-                for (int i = 0; i < mat.Resources.Count; i++) list.SetGraphicsResourceSet((uint)i + 1, mat.Resources[i]);
-
-            list.SetVertexBuffer(0,model.VertexBuffer);
-            list.SetIndexBuffer(model.IndexBuffer,IndexFormat.UInt32);
-
-            list.DrawIndexed(model.IndexCount);
         }
 
         public static KumaPass FromFile(ResourceFactory factory,string set,PassFile result,KumaPipeline pipeline, List<VertexElementDescription> layoutElements)
@@ -206,6 +247,8 @@ namespace KumaEngine.Rendering
                 ),
                 Outputs = SwapChains[result.Output].Framebuffer.OutputDescription
             });
+
+            ret.swapchain = SwapChains[result.Output];
 
             List<BindableResource> bindableResources = new();
 

@@ -95,14 +95,15 @@ namespace KumaEngine
             CommandList.ClearColorTarget(0, RgbaFloat.White);
             CommandList.ClearDepthStencil(1f);
 
-            foreach (var item in KumaScene.CurrentGameObjects)
+            foreach (var item in PipelineAPI.PipelineHandles.Values)
             {
-                CommandList.UpdateBuffer(item.Pipeline.ModelBuffer, 0, new RocketModelScheme(item.Transform));
-                item.Pipeline.Draw(CommandList,item.Model,item.Material);
+                var go = KumaScene.CurrentGameObjects.Where(x => x.Pipeline == item).ToArray();
+
+                if (go.Length > 0) item.Draw(CommandList, go);
             }
 
-            if (KumaScene.CurrentSkyboxMaterial != null) 
-                SkyboxPipeline.Draw(CommandList,SkyboxModel, KumaScene.CurrentSkyboxMaterial);
+            if (KumaScene.CurrentSkyboxMaterial != null)
+                SkyboxPipeline.Draw(CommandList, SkyboxModel, KumaScene.CurrentSkyboxMaterial);
 
             foreach (var item in UIAPI.UISurfaceHandles)
             {
