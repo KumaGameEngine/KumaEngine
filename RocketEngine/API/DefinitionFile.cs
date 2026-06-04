@@ -30,10 +30,8 @@ namespace KumaEngine.API
             {"ui",UIAPI.Register},
         };
 
-        public static void Init(Game game)
+        public static void Init()
         {
-            Game = game;
-
             lua = new();
 
             lua.DoString($"package.path = '{Path.Combine("Data","Scripts", "?.lua").Replace("\\", "/")}';");

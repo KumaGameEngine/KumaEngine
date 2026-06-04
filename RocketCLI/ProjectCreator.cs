@@ -10,7 +10,6 @@ namespace KumaCLI
     {
         static List<IPathElement> ProjectStructure = new()
         {
-            new DirectoryElement("Shaders"),
             new DirectoryElement("Data",new()
             {
                 new DirectoryElement("Textures"),
@@ -23,6 +22,7 @@ namespace KumaCLI
                     new FileElement("main.lua",ProjectHelper.GenerateMainFile()),
                     new FileElement("engine.lua",ProjectHelper.GenerateEngineFile())
                 }),
+                new DirectoryElement("Shaders"),
             }),
             new FileElement("rocketConfig.json",ProjectHelper.GenerateProjectFile())
         };

@@ -20,8 +20,7 @@ namespace KumaEngine
 
         protected override void CreateResources(ResourceFactory factory)
         {
-            //Camera = new Camera(Window.Width, Window.Height,factory);
-            //Camera.Position = new Vector3(0,0,5);
+            DefinitionFile.Game = this;
 
             Camera._cameraProjViewBuffer = factory.CreateBuffer(
                 new BufferDescription((uint)(Unsafe.SizeOf<Matrix4x4>() * 2), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
@@ -31,7 +30,7 @@ namespace KumaEngine
 
             KumaScene.CreateLightBuffers(factory);
 
-            KumaPass.SwapChains.Add("MainSwapchain", MainSwapchain.Framebuffer.OutputDescription);;
+            KumaPass.SwapChains.Add("MainSwapchain", KumaSwapchain.FromVeldrid(factory,MainSwapchain, "MainSwapchain"));
 
             CommandList = factory.CreateCommandList();
 
@@ -48,7 +47,7 @@ namespace KumaEngine
 
             bool first = true;
 
-            DefinitionFile.Init(this);
+            DefinitionFile.Init();
 
             Window.Resized += () =>
             {

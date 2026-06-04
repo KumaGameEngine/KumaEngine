@@ -13,10 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Shaders\ui\pipeline.json">
+    <Content Include="Data\Shaders\ui\pipeline.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Shaders\skybox\pipeline.json">
+    <Content Include="Data\Shaders\skybox\pipeline.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -38,19 +38,19 @@
     <None Update="Data\UI\rml.rcss">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Shaders\pbr.glsl">
+    <None Update="Data\Shaders\pbr.glsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Shaders\ui\fragment.glsl">
+    <None Update="Data\Shaders\ui\fragment.glsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Shaders\ui\vertex.glsl">
+    <None Update="Data\Shaders\ui\vertex.glsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Shaders\skybox\fragment.glsl">
+    <None Update="Data\Shaders\skybox\fragment.glsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Shaders\skybox\vertex.glsl">
+    <None Update="Data\Shaders\skybox\vertex.glsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

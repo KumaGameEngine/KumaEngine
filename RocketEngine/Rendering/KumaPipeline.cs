@@ -75,7 +75,7 @@ namespace KumaEngine.Rendering
                 Converters = [new StringEnumConverter()]
             };
 
-            var defpath = Path.Combine("Shaders", set, "pipeline.json");
+            var defpath = Path.Combine("Data","Shaders", set, "pipeline.json");
 
             if (!File.Exists(defpath)) throw new Exception("Could not find pipeline definition file");
 
@@ -122,7 +122,7 @@ namespace KumaEngine.Rendering
         public List<TextureView> Textures { get; set; } = new();
         public ResourceSet Resources { get; set; } = null!;
 
-        public static Dictionary<string, OutputDescription> SwapChains = new();
+        public static Dictionary<string, KumaSwapchain> SwapChains = new();
 
         public KumaPass(ResourceFactory factory,GraphicsPipelineDescription pipelineDescription) 
         {
@@ -181,6 +181,9 @@ namespace KumaEngine.Rendering
             ResourceLayoutDescription resourceLayoutDescription1 = new ResourceLayoutDescription(textureLayoutElementDescriptions.ToArray());
             ResourceLayout textureLayout = factory.CreateResourceLayout(resourceLayoutDescription1);
 
+            if (!SwapChains.ContainsKey(result.Output))
+                SwapChains.Add(result.Output, new(factory, result.Output + ".json"));
+
             var ret = new KumaPass(factory, new()
             {
                 BlendState = BlendStateDescription.SingleAlphaBlend,
@@ -201,7 +204,7 @@ namespace KumaEngine.Rendering
                     vertexLayouts: [new(layoutElements.ToArray())],
                     shaders: Shaders.FromSPIRVVertFrag(factory, set, result.VertexShader, result.FragmentShader)
                 ),
-                Outputs = SwapChains[result.Output]
+                Outputs = SwapChains[result.Output].Framebuffer.OutputDescription
             });
 
             List<BindableResource> bindableResources = new();

@@ -33,7 +33,7 @@ namespace KumaEngine.Rendering
                     var path = s[1..^1];
 
                     var ext = Path.HasExtension(path) ? Path.GetExtension(path) : ".glsl";
-                    sb.AppendLine(PreProcess(Path.Combine("Shaders", Path.GetFileNameWithoutExtension(path) + ext)));
+                    sb.AppendLine(PreProcess(Path.Combine("Data", "Shaders", Path.GetFileNameWithoutExtension(path) + ext)));
                 }
                 else sb.AppendLine(line);
 
@@ -46,14 +46,14 @@ namespace KumaEngine.Rendering
 
         public static Shader[] FromSPIRVVertFrag(ResourceFactory factory, string ShaderPackName, string vert,string frag) =>
             factory.CreateFromSpirv(
-                new(ShaderStages.Vertex, PreProcessBytes(Path.Combine("Shaders", ShaderPackName, vert)), "main"),
-                new(ShaderStages.Fragment, PreProcessBytes(Path.Combine("Shaders", ShaderPackName, frag)), "main"),
+                new(ShaderStages.Vertex, PreProcessBytes(Path.Combine("Data","Shaders", ShaderPackName, vert)), "main"),
+                new(ShaderStages.Fragment, PreProcessBytes(Path.Combine("Data", "Shaders", ShaderPackName, frag)), "main"),
                 new()
             );
         public static Shader[] FromSPIRVCompute(ResourceFactory factory, string ShaderPackName) =>
             factory.CreateFromSpirv(
-                new(ShaderStages.Vertex, PreProcessBytes(Path.Combine("Shaders",ShaderPackName,"vertex.glsl")),"main"),
-                new(ShaderStages.Fragment, PreProcessBytes(Path.Combine("Shaders",ShaderPackName,"fragment.glsl")),"main"),
+                new(ShaderStages.Vertex, PreProcessBytes(Path.Combine("Data", "Shaders",ShaderPackName,"vertex.glsl")),"main"),
+                new(ShaderStages.Fragment, PreProcessBytes(Path.Combine("Data", "Shaders",ShaderPackName,"fragment.glsl")),"main"),
                 new()
             );
     }
