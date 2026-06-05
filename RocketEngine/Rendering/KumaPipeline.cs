@@ -63,7 +63,7 @@ namespace KumaEngine.Rendering
         public DeviceBuffer ModelBuffer;
         public Dictionary<string, RoketVertexElement> VertexDefinition { get; set; } = new();
 
-        static Framebuffer PrevSwapchain = null!;
+        static KumaSwapchain PrevSwapchain = null!;
 
         public KumaPipeline(ResourceFactory factory)
         {
@@ -99,12 +99,14 @@ namespace KumaEngine.Rendering
 
         public void Draw(CommandList list, Model model, KumaMaterial mat)
         {
+            PrevSwapchain = null!;
+
             foreach (var item in Passes)
             {
-                if (PrevSwapchain != item.swapchain.Framebuffer)
+                if (PrevSwapchain != item.swapchain)
                 {
-                    list.SetFramebuffer(item.swapchain.Framebuffer);
-                    PrevSwapchain = item.swapchain.Framebuffer;
+                    list.SetFramebuffer(item.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
+                    PrevSwapchain = item.swapchain ?? null!;
                 }
 
                 list.SetPipeline(item.Pipeline);
@@ -123,12 +125,14 @@ namespace KumaEngine.Rendering
 
         public void Draw(CommandList list, params GameObject[] obj)
         {
+            PrevSwapchain = null!;
+
             foreach (var pass in Passes)
             {
-                if (PrevSwapchain != pass.swapchain.Framebuffer)
+                if (PrevSwapchain != pass.swapchain)
                 {
-                    list.SetFramebuffer(pass.swapchain.Framebuffer);
-                    PrevSwapchain = pass.swapchain.Framebuffer;
+                    list.SetFramebuffer(pass.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
+                    PrevSwapchain = pass.swapchain ?? null!;
                 }
 
                 list.SetPipeline(pass.Pipeline);
@@ -245,7 +249,7 @@ namespace KumaEngine.Rendering
                     vertexLayouts: [new(layoutElements.ToArray())],
                     shaders: Shaders.FromSPIRVVertFrag(factory, set, result.VertexShader, result.FragmentShader)
                 ),
-                Outputs = SwapChains[result.Output].Framebuffer.OutputDescription
+                Outputs = SwapChains[result.Output]?.Framebuffer.OutputDescription ?? DefinitionFile.Game.MainSwapchain.Framebuffer.OutputDescription
             });
 
             ret.swapchain = SwapChains[result.Output];

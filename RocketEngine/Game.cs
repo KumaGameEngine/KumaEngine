@@ -30,7 +30,7 @@ namespace KumaEngine
 
             KumaScene.CreateLightBuffers(factory);
 
-            KumaPass.SwapChains.Add("MainSwapchain", KumaSwapchain.FromVeldrid(factory,MainSwapchain, "MainSwapchain"));
+            KumaPass.SwapChains.Add("MainSwapchain", null!);
 
             CommandList = factory.CreateCommandList();
 
@@ -90,6 +90,18 @@ namespace KumaEngine
             CommandList.Begin();
 
             KumaScene.CurrentCamera.Update(CommandList);
+
+            foreach (var item in KumaPass.SwapChains.Values)
+            {
+                if (item == null) continue;
+
+                CommandList.SetFramebuffer(item.Framebuffer);
+
+                for (int i = 0; i < item.ClearColorIDS.Count; i++)
+                    if (item.ClearColorIDS[i]) CommandList.ClearColorTarget((uint)i, RgbaFloat.White);
+
+                if (item.ClearDepth) CommandList.ClearDepthStencil(1f);
+            }
 
             CommandList.SetFramebuffer(MainSwapchain.Framebuffer);
             CommandList.ClearColorTarget(0, RgbaFloat.White);

@@ -18,6 +18,10 @@ namespace KumaEngine.Rendering
         public Framebuffer Framebuffer;
         public Dictionary<string, TextureView> Attachments = new();
 
+        public List<bool> ClearColorIDS = new();
+
+        public bool ClearDepth = true;
+
         List<Texture> _colorTextures = new();
         Texture _DepthTexture = null!;
         SwapchainFile _result;
@@ -54,7 +58,6 @@ namespace KumaEngine.Rendering
             if (!File.Exists(defpath)) throw new Exception("Could not find swapchain definition file");
 
             _result = JsonConvert.DeserializeObject<SwapchainFile>(File.ReadAllText(defpath), settings);
-
             Resize(factory);
         }
 
@@ -86,6 +89,8 @@ namespace KumaEngine.Rendering
 
                 _colorTextures.Add(colorTex);
 
+                ClearColorIDS.Add(item.Clear);
+
                 Attachments.Add(item.Name, factory.CreateTextureView(colorTex));
             }
 
@@ -100,11 +105,13 @@ namespace KumaEngine.Rendering
                 );
                 _DepthTexture = factory.CreateTexture(ref depthDesc);
 
+                ClearDepth = _result.DepthAttachment.Clear;
+
                 Attachments.Add(_result.DepthAttachment.Name, factory.CreateTextureView(_DepthTexture));
             }
 
             var fbDesc = new FramebufferDescription(_DepthTexture, _colorTextures.ToArray());
-
+            
             Framebuffer = factory.CreateFramebuffer(ref fbDesc);
         }
     }
@@ -123,6 +130,7 @@ namespace KumaEngine.Rendering
         public string Name = "";
         public uint MipLevels = 1;
         public uint ArrayLayers = 1;
+        public bool Clear = true;
         public PixelFormat Format = PixelFormat.R8_G8_B8_A8_UNorm;
     }
 }
