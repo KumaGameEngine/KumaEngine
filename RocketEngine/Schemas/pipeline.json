@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PipelineFile",
+  "type": "object",
+  "properties": {
+    "Passes": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PassFile"
+      }
+    },
+    "VertexDefinition": {
+      "type": "object",
+      "default": {},
+      "additionalProperties": {
+        "$ref": "#/$defs/RoketVertexElement"
+      },
+      "description": "Maps attribute names to their vertex element type (e.g. 'aPosition': 'Position')"
+    }
+  },
+  "$defs": {
+    "PassFile": {
+      "title": "PassFile",
+      "type": "object",
+      "properties": {
+        "Output": {
+          "type": "string",
+          "default": "MainSwapchain",
+          "description": "Name of the swapchain or render target this pass writes to"
+        },
+        "VertexShader": {
+          "type": "string",
+          "default": "",
+          "description": "Path or name of the vertex shader"
+        },
+        "FragmentShader": {
+          "type": "string",
+          "default": "",
+          "description": "Path or name of the fragment shader"
+        },
+        "ComputeShader": {
+          "type": "string",
+          "default": "",
+          "description": "Path or name of the compute shader (mutually exclusive with vertex/fragment)"
+        },
+        "Uniforms": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "$ref": "#/$defs/RoketPipelineUniforms"
+          },
+          "description": "Maps uniform binding names to their semantic role"
+        }
+      }
+    },
+    "RoketPipelineUniforms": {
+      "title": "RoketPipelineUniforms",
+      "type": "string",
+      "enum": [
+        "CameraProjView",
+        "CameraPos",
+        "ObjectModelMatrix",
+        "LinearSamplerCube",
+        "LinearSampler2D",
+        "LinearSampler3D",
+        "Lights",
+        "NULL"
+      ]
+    },
+    "RoketVertexElement": {
+      "title": "RoketVertexElement",
+      "type": "string",
+      "enum": [
+        "UV",
+        "UVW",
+        "Position",
+        "Normal",
+        "Color",
+        "Tangent"
+      ]
+    }
+  }
+}

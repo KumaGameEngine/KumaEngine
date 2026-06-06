@@ -59,6 +59,9 @@ namespace KumaEngine
 
                 foreach (var item in UIAPI.UISurfaceHandles)
                     item.Value.Resize(Window.Width,Window.Height);
+
+                foreach (var item in KumaPass.SwapChains.Values) 
+                    if (item != null) item.Resize(factory);
             };
 
             SkyboxPipeline = KumaPipeline.FromSet(factory, "skybox");

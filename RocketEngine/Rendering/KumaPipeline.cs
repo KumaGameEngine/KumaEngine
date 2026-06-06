@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Veldrid;
+using Vulkan;
 using ResourceSet = Veldrid.ResourceSet;
 
 namespace KumaEngine.Rendering
@@ -192,27 +193,38 @@ namespace KumaEngine.Rendering
 
         public static KumaPass FromFile(ResourceFactory factory,string set,PassFile result,KumaPipeline pipeline, List<VertexElementDescription> layoutElements)
         {
-            List<ResourceLayoutElementDescription> resourceLayoutElementDescriptions = new();
-            List<ResourceLayoutElementDescription> textureLayoutElementDescriptions = new();
+            List<ResourceLayoutElementDescription> staticResourceLayoutElementDescriptions = new();
+            List<ResourceLayoutElementDescription> dynamicResourceLayoutElementDescriptions = new();
 
             foreach (var item in result.Uniforms)
             {
-                switch (item.Value)
+                var enumValues = RoketPipelineUniforms.NULL;
+
+                if (Enum.TryParse<RoketPipelineUniforms>(item.Value,true, out var parsedEnum))
+                    enumValues = parsedEnum;
+
+                switch (enumValues)
                 {
                     case RoketPipelineUniforms.CameraProjView:
                     case RoketPipelineUniforms.ObjectModelMatrix:
                     case RoketPipelineUniforms.Lights:
                     case RoketPipelineUniforms.CameraPos:
-                        resourceLayoutElementDescriptions.Add(
+                        staticResourceLayoutElementDescriptions.Add(
                             new ResourceLayoutElementDescription(item.Key, ResourceKind.UniformBuffer, ShaderStages.Vertex | ShaderStages.Fragment)
                         );
                         break;
                     case RoketPipelineUniforms.LinearSamplerCube:
                     case RoketPipelineUniforms.LinearSampler2D:
                     case RoketPipelineUniforms.LinearSampler3D:
-                        textureLayoutElementDescriptions.AddRange(
+                        dynamicResourceLayoutElementDescriptions.AddRange(
                             new ResourceLayoutElementDescription(item.Key+"Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
                             new ResourceLayoutElementDescription(item.Key+"Samp", ResourceKind.Sampler, ShaderStages.Fragment)
+                        );
+                        break;
+                    case RoketPipelineUniforms.NULL:
+                        staticResourceLayoutElementDescriptions.AddRange(
+                            new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+                            new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment)
                         );
                         break;
                     default:
@@ -220,10 +232,10 @@ namespace KumaEngine.Rendering
                 }
             }
 
-            ResourceLayoutDescription resourceLayoutDescription = new ResourceLayoutDescription(resourceLayoutElementDescriptions.ToArray());
+            ResourceLayoutDescription resourceLayoutDescription = new ResourceLayoutDescription(staticResourceLayoutElementDescriptions.ToArray());
             ResourceLayout sharedLayout = factory.CreateResourceLayout(resourceLayoutDescription);
 
-            ResourceLayoutDescription resourceLayoutDescription1 = new ResourceLayoutDescription(textureLayoutElementDescriptions.ToArray());
+            ResourceLayoutDescription resourceLayoutDescription1 = new ResourceLayoutDescription(dynamicResourceLayoutElementDescriptions.ToArray());
             ResourceLayout textureLayout = factory.CreateResourceLayout(resourceLayoutDescription1);
 
             if (!SwapChains.ContainsKey(result.Output))
@@ -258,7 +270,12 @@ namespace KumaEngine.Rendering
 
             foreach (var item in result.Uniforms)
             {
-                switch (item.Value)
+                var enumValues = RoketPipelineUniforms.NULL;
+
+                if (Enum.TryParse<RoketPipelineUniforms>(item.Value,true, out var parsedEnum))
+                    enumValues = parsedEnum;
+
+                switch (enumValues)
                 {
                     case RoketPipelineUniforms.CameraProjView:
                         bindableResources.Add(Camera._cameraProjViewBuffer);
@@ -271,6 +288,11 @@ namespace KumaEngine.Rendering
                         break;
                     case RoketPipelineUniforms.CameraPos:
                         bindableResources.Add(Camera._cameraPosBuffer);
+                        break;
+                    case RoketPipelineUniforms.NULL:
+                        var tex = SwapChains.First(x => x.Value != null && x.Value.Attachments.ContainsKey(item.Value));
+                        bindableResources.Add(tex.Value.Attachments[item.Value]);
+                        bindableResources.Add(DefinitionFile.Game.GraphicsDevice.Aniso4xSampler);
                         break;
                     default:
                         break;
@@ -310,9 +332,10 @@ namespace KumaEngine.Rendering
         LinearSamplerCube,
         LinearSampler2D,
         LinearSampler3D,
-        Lights
+        Lights,
+        NULL
     }
-    public enum RoketVertexElement : byte
+    public enum RoketVertexElement
     {
         UV,
         UVW,
@@ -335,6 +358,6 @@ namespace KumaEngine.Rendering
         public string FragmentShader = "";
         public string ComputeShader = "";
 
-        public Dictionary<string, RoketPipelineUniforms> Uniforms = new();
+        public Dictionary<string, string> Uniforms = new();
     }
 }
