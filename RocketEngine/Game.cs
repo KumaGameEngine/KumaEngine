@@ -25,6 +25,9 @@ namespace KumaEngine
             Camera._cameraProjViewBuffer = factory.CreateBuffer(
                 new BufferDescription((uint)(Unsafe.SizeOf<Matrix4x4>() * 2), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
+            Camera._cameraProjViewInverseBuffer = factory.CreateBuffer(
+                new BufferDescription((uint)(Unsafe.SizeOf<Matrix4x4>() * 2), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+
             Camera._cameraPosBuffer = factory.CreateBuffer(
                 new BufferDescription((uint)(Unsafe.SizeOf<Vector3>() + 4), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 

@@ -206,6 +206,7 @@ namespace KumaEngine.Rendering
                 switch (enumValues)
                 {
                     case RoketPipelineUniforms.CameraProjView:
+                    case RoketPipelineUniforms.CameraProjViewInverse:
                     case RoketPipelineUniforms.ObjectModelMatrix:
                     case RoketPipelineUniforms.Lights:
                     case RoketPipelineUniforms.CameraPos:
@@ -280,6 +281,9 @@ namespace KumaEngine.Rendering
                     case RoketPipelineUniforms.CameraProjView:
                         bindableResources.Add(Camera._cameraProjViewBuffer);
                         break;
+                    case RoketPipelineUniforms.CameraProjViewInverse:
+                        bindableResources.Add(Camera._cameraProjViewInverseBuffer);
+                        break;
                     case RoketPipelineUniforms.ObjectModelMatrix:
                         bindableResources.Add(pipeline.ModelBuffer);
                         break;
@@ -327,6 +331,7 @@ namespace KumaEngine.Rendering
     public enum RoketPipelineUniforms
     {
         CameraProjView,
+        CameraProjViewInverse,
         CameraPos,
         ObjectModelMatrix,
         LinearSamplerCube,

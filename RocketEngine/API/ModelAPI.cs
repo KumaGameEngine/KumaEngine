@@ -20,15 +20,16 @@ namespace KumaEngine.API
                 var fileName = lua.ToString(1);
                 var pipeline = lua.ToPipeline(2);
 
-                lua.PushModel(
-                    Model.FromFile(
-                        DefinitionFile.Game.GraphicsDevice,
-                        DefinitionFile.Game.ResourceFactory,
-                        pipeline, fileName
-                    )[0]
+                var mdls = Model.FromFile(
+                    DefinitionFile.Game.GraphicsDevice,
+                    DefinitionFile.Game.ResourceFactory,
+                    pipeline, fileName
                 );
 
-                return 1;
+                foreach (var item in mdls)
+                    lua.PushModel(item);
+
+                return mdls.Count;
             })
         ];
 

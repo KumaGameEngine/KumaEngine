@@ -21,6 +21,7 @@ namespace KumaEngine.Rendering
         private Matrix4x4 _viewMatrix;
         private Matrix4x4 _projectionMatrix;
         public static DeviceBuffer _cameraProjViewBuffer;
+        public static DeviceBuffer _cameraProjViewInverseBuffer;
 
         public static DeviceBuffer _cameraPosBuffer;
 
@@ -74,6 +75,7 @@ namespace KumaEngine.Rendering
         public void Update(CommandList cl)
         {
             cl.UpdateBuffer(_cameraProjViewBuffer,0, new MatrixPair(_viewMatrix, _projectionMatrix));
+            cl.UpdateBuffer(_cameraProjViewInverseBuffer,0, new MatrixPair(Matrix4x4.Invert(_viewMatrix, out var viewInverse) ? viewInverse : _viewMatrix, Matrix4x4.Invert(_projectionMatrix, out var projInverse) ? projInverse : _projectionMatrix));
             cl.UpdateBuffer(_cameraPosBuffer, 0, _position);
         }
 

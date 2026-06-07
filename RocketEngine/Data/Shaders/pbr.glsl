@@ -22,7 +22,7 @@ float G_Smith(float NdotV, float NdotL, float roughness)
 
 vec3 F_Schlick(float cosTheta, vec3 F0) 
 {
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+    return F0 + (1.0 - F0) * exp2((-5.55473 * cosTheta - 6.98316) * cosTheta);
 }
 
 vec3 perturbNormal(vec3 N, vec3 T, vec2 uv,texture2D NormalTex, sampler NormalSamp) //! vec3 perturbNormal(vec3 N, vec3 T, vec2 uv)
@@ -36,34 +36,37 @@ vec3 perturbNormal(vec3 N, vec3 T, vec2 uv,texture2D NormalTex, sampler NormalSa
 }
 
 vec3 pbrLo(
-        float lightRadius,vec3 baseColor,float intensity,
-        vec3 Lv,vec3 V,vec3 N,vec3 F0,float NdotV,
-        float roughness,float metallic,vec3 albedo)
+        float lightRadius, vec3 baseColor, float intensity,
+        vec3 Lv, vec3 V, vec3 N, vec3 F0, float NdotV,
+        float roughness, float metallic, vec3 albedo)
 {
-
     float dist2 = dot(Lv, Lv);
-    if (dist2 >= lightRadius * lightRadius) return vec3(0);
+    float lr2 = lightRadius * lightRadius;
+    
+    if (dist2 >= lr2) return vec3(0.0);
 
-    float dist = sqrt(dist2);
-    vec3  L    = Lv / dist;
-    vec3  H    = normalize(V + L);
+    vec3  L = Lv * inversesqrt(dist2);
+    vec3  H = normalize(V + L);
 
-    float attenuation = clamp(1.0 - pow(dist / lightRadius, 4.0), 0.0, 1.0);
-    attenuation       = (attenuation * attenuation) / (dist2 + 1e-4);
+    float d2_over_r2 = dist2 / lr2;
+    float d4_over_r4 = d2_over_r2 * d2_over_r2;
+    float attenuation = clamp(1.0 - d4_over_r4, 0.0, 1.0);
+    attenuation = (attenuation * attenuation) / (dist2 + 1e-4);
 
-    vec3  radiance      = baseColor * intensity * attenuation;
+    vec3 radiance = baseColor * intensity * attenuation;
 
     float NdotL = max(dot(N, L), 0.0);
     float NdotH = max(dot(N, H), 0.0);
     float HdotV = max(dot(H, V), 0.0);
 
-    float D        = D_GGX(NdotH, roughness);
-    float G        = G_Smith(NdotV, NdotL, roughness);
-    vec3  F        = F_Schlick(HdotV, F0);
-    vec3  specular = (D * G * F) / max(4.0 * NdotV * NdotL, 1e-4);
+    float D = D_GGX(NdotH, roughness);
+    float G = G_Smith(NdotV, NdotL, roughness);
+    vec3  F = F_Schlick(HdotV, F0);
+    
+    vec3 specular = (D * G * F) / max(4.0 * NdotV * NdotL, 1e-4);
 
-    vec3 kD      = (vec3(1.0) - F) * (1.0 - metallic);
-    vec3 diffuse = kD * albedo / 3.14159265359;
+    vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
+    vec3 diffuse = kD * albedo * 0.31830988618; 
 
     return (diffuse + specular) * radiance * NdotL;
 }

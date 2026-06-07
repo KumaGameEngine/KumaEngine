@@ -10,7 +10,7 @@
       "FragmentShader": "fragment.glsl",
 
       "Uniforms": {
-        "ProjView": "CameraProjView",
+        "ProjView": "CameraProjViewInverse",
         "Model": "ObjectModelMatrix",
         "Skybox": "LinearSamplerCube"
       },

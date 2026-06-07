@@ -59,6 +59,7 @@
       "type": "string",
       "enum": [
         "CameraProjView",
+        "CameraProjViewInverse",
         "CameraPos",
         "ObjectModelMatrix",
         "LinearSamplerCube",
