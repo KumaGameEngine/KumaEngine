@@ -72,22 +72,22 @@ namespace KumaEngine.Rendering
             {
                 switch (item.Value)
                 {
-                    case RoketVertexElement.UV:
+                    case KumaVertexElement.UV:
                         channels.Add(new UVMeshChannel());
                         break;
-                    case RoketVertexElement.UVW:
+                    case KumaVertexElement.UVW:
                         channels.Add(new UVWMeshChannel());
                         break;
-                    case RoketVertexElement.Position:
+                    case KumaVertexElement.Position:
                         channels.Add(new PositionMeshChannel());
                         break;
-                    case RoketVertexElement.Normal:
+                    case KumaVertexElement.Normal:
                         channels.Add(new NormalsMeshChannel());
                         break;
-                    case RoketVertexElement.Color:
+                    case KumaVertexElement.Color:
                         channels.Add(new ColorMeshChannel());
                         break;
-                    case RoketVertexElement.Tangent:
+                    case KumaVertexElement.Tangent:
                         channels.Add(new TangentsMeshChannel());
                         break;
                     default:

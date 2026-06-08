@@ -54,9 +54,9 @@ namespace KumaEngine.Rendering
             {
                 switch (item.Value)
                 {
-                    case RoketPipelineUniforms.LinearSamplerCube:
-                    case RoketPipelineUniforms.LinearSampler2D:
-                    case RoketPipelineUniforms.LinearSampler3D:
+                    case KumaPipelineUniforms.LinearSamplerCube:
+                    case KumaPipelineUniforms.LinearSampler2D:
+                    case KumaPipelineUniforms.LinearSampler3D:
                         textureLayoutElementDescriptions.AddRange(
                             new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
                             new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment)
@@ -76,15 +76,15 @@ namespace KumaEngine.Rendering
             {
                 switch (item.Value)
                 {
-                    case RoketPipelineUniforms.LinearSamplerCube:
+                    case KumaPipelineUniforms.LinearSamplerCube:
                         bindableResources.Add(TextureExt.CubemapFromFile(device, factory, item.Key));
                         bindableResources.Add(device.Aniso4xSampler);
                         break;
-                    case RoketPipelineUniforms.LinearSampler2D:
+                    case KumaPipelineUniforms.LinearSampler2D:
                         bindableResources.Add(TextureExt.ViewFromFile(device, factory, item.Key));
                         bindableResources.Add(device.Aniso4xSampler);
                         break;
-                    case RoketPipelineUniforms.LinearSampler3D:
+                    case KumaPipelineUniforms.LinearSampler3D:
                         break;
                     default:
                         break;
@@ -107,6 +107,6 @@ namespace KumaEngine.Rendering
 
     public class MaterialFile
     {
-        public Dictionary<string, RoketPipelineUniforms> Textures = new();
+        public Dictionary<string, KumaPipelineUniforms> Textures = new();
     }
 }

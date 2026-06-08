@@ -24,6 +24,14 @@
       "title": "PassFile",
       "type": "object",
       "properties": {
+        "Type": {
+          "title": "Type",
+          "type": "string",
+          "enum": [
+            "Graphics",
+            "Compute"
+          ]
+        },
         "Output": {
           "type": "string",
           "default": "MainSwapchain",
@@ -43,6 +51,46 @@
           "type": "string",
           "default": "",
           "description": "Path or name of the compute shader (mutually exclusive with vertex/fragment)"
+        },
+        "ThreadGroupSizeX": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 1
+        },
+        "ThreadGroupSizeY": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 1
+        },
+        "ThreadGroupSizeZ": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 1
+        },
+        "GroupCountX": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 1
+        },
+        "GroupCountY": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 1
+        },
+        "GroupCountZ": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 1
+        },
+        "AutoGroups ": {
+          "type": "boolean",
+          "default": false
         },
         "Uniforms": {
           "type": "object",
@@ -65,8 +113,7 @@
         "LinearSamplerCube",
         "LinearSampler2D",
         "LinearSampler3D",
-        "Lights",
-        "NULL"
+        "Lights"
       ]
     },
     "RoketVertexElement": {

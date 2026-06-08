@@ -50,11 +50,10 @@ namespace KumaEngine.Rendering
                 new(ShaderStages.Fragment, PreProcessBytes(Path.Combine("Data", "Shaders", ShaderPackName, frag)), "main"),
                 new()
             );
-        public static Shader[] FromSPIRVCompute(ResourceFactory factory, string ShaderPackName) =>
+        public static Shader FromSPIRVCompute(ResourceFactory factory, string ShaderPackName, string compute) =>
             factory.CreateFromSpirv(
-                new(ShaderStages.Vertex, PreProcessBytes(Path.Combine("Data", "Shaders",ShaderPackName,"vertex.glsl")),"main"),
-                new(ShaderStages.Fragment, PreProcessBytes(Path.Combine("Data", "Shaders",ShaderPackName,"fragment.glsl")),"main"),
-                new()
+                new ShaderDescription(ShaderStages.Compute, PreProcessBytes(Path.Combine("Data", "Shaders",ShaderPackName, compute)),"main"),
+                new CrossCompileOptions()
             );
     }
 }

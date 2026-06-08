@@ -2,6 +2,7 @@
 using KumaEngine.Rendering.VertexTypes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using SharpGen.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Veldrid;
+using Vortice.Direct3D11;
 using Vulkan;
 using ResourceSet = Veldrid.ResourceSet;
 
@@ -62,7 +64,7 @@ namespace KumaEngine.Rendering
     {
         public List<KumaPass> Passes = new();
         public DeviceBuffer ModelBuffer;
-        public Dictionary<string, RoketVertexElement> VertexDefinition { get; set; } = new();
+        public Dictionary<string, KumaVertexElement> VertexDefinition { get; set; } = new();
 
         static KumaSwapchain PrevSwapchain = null!;
 
@@ -104,6 +106,35 @@ namespace KumaEngine.Rendering
 
             foreach (var item in Passes)
             {
+                if (item.IsCompute)
+                {
+                    list.SetPipeline(item.Pipeline);
+                    list.SetComputeResourceSet(0, item.Resources);
+
+                    if (mat != null)
+                    {
+                        for (int i = 0; i < mat.Resources.Count; i++)
+                        {
+                            list.SetComputeResourceSet((uint)i + 1, mat.Resources[i]);
+                        }
+                    }
+
+                    if (item.definition.AutoGroups)
+                    {
+                        uint groupsX = (uint)((DefinitionFile.Game.Window.Width + item.definition.ThreadGroupSizeX - 1) / item.definition.ThreadGroupSizeX);
+                        uint groupsY = (uint)((DefinitionFile.Game.Window.Height + item.definition.ThreadGroupSizeY - 1) / item.definition.ThreadGroupSizeY);
+
+                        list.Dispatch(groupsX, groupsY, 1);
+                    }
+                    else list.Dispatch(
+                        item.definition.GroupCountX, 
+                        item.definition.GroupCountY, 
+                        item.definition.GroupCountZ
+                    );
+
+                    continue;
+                }
+
                 if (PrevSwapchain != item.swapchain)
                 {
                     list.SetFramebuffer(item.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
@@ -111,7 +142,6 @@ namespace KumaEngine.Rendering
                 }
 
                 list.SetPipeline(item.Pipeline);
-
                 list.SetGraphicsResourceSet(0, item.Resources);
 
                 if (mat != null)
@@ -130,6 +160,43 @@ namespace KumaEngine.Rendering
 
             foreach (var pass in Passes)
             {
+                if (pass.IsCompute)
+                {
+                    list.SetPipeline(pass.Pipeline);
+                    list.SetComputeResourceSet(0, pass.Resources);
+
+                    KumaMaterial lastBoundMaterial = null!;
+                    var sortedObjects = obj.OrderBy(x => x.Material?.GetHashCode() ?? 0);
+
+                    foreach (var gameObject in sortedObjects)
+                    {
+                        list.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
+
+                        if (gameObject.Material != null && gameObject.Material != lastBoundMaterial)
+                        {
+                            for (int i = 0; i < gameObject.Material.Resources.Count; i++)
+                            {
+                                list.SetComputeResourceSet((uint)i + 1, gameObject.Material.Resources[i]);
+                            }
+                            lastBoundMaterial = gameObject.Material;
+                        }
+
+                        if (pass.definition.AutoGroups)
+                        {
+                            uint groupsX = (uint)((DefinitionFile.Game.Window.Width + pass.definition.ThreadGroupSizeX - 1) / pass.definition.ThreadGroupSizeX);
+                            uint groupsY = (uint)((DefinitionFile.Game.Window.Height + pass.definition.ThreadGroupSizeY - 1) / pass.definition.ThreadGroupSizeY);
+
+                            list.Dispatch(groupsX, groupsY, 1);
+                        }
+                        else list.Dispatch(
+                            pass.definition.GroupCountX,
+                            pass.definition.GroupCountY,
+                            pass.definition.GroupCountZ
+                        );
+                    }
+                    continue;
+                }
+
                 if (PrevSwapchain != pass.swapchain)
                 {
                     list.SetFramebuffer(pass.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
@@ -139,24 +206,24 @@ namespace KumaEngine.Rendering
                 list.SetPipeline(pass.Pipeline);
                 list.SetGraphicsResourceSet(0, pass.Resources);
 
-                KumaMaterial lastBoundMaterial = null!;
+                KumaMaterial lastBoundGraphicsMaterial = null!;
                 DeviceBuffer lastBoundVertexBuffer = null!;
 
-                var sortedObjects = obj
+                var sortedGraphicsObjects = obj
                     .OrderBy(x => x.Material?.GetHashCode() ?? 0)
                     .ThenBy(x => x.Model.VertexBuffer.GetHashCode());
 
-                foreach (var gameObject in sortedObjects)
+                foreach (var gameObject in sortedGraphicsObjects)
                 {
                     list.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
 
-                    if (gameObject.Material != null && gameObject.Material != lastBoundMaterial)
+                    if (gameObject.Material != null && gameObject.Material != lastBoundGraphicsMaterial)
                     {
                         for (int i = 0; i < gameObject.Material.Resources.Count; i++)
                         {
                             list.SetGraphicsResourceSet((uint)i + 1, gameObject.Material.Resources[i]);
                         }
-                        lastBoundMaterial = gameObject.Material;
+                        lastBoundGraphicsMaterial = gameObject.Material;
                     }
 
                     var model = gameObject.Model;
@@ -176,9 +243,13 @@ namespace KumaEngine.Rendering
     public class KumaPass
     {
         GraphicsPipelineDescription Descriptor;
+        ComputePipelineDescription ComputeDescriptor;
         public Pipeline Pipeline;
+        public bool IsCompute { get; } = false;
 
-        public List<TextureView> Textures { get; set; } = new();
+        public PassFile definition { get; private set; }
+
+        public List<(string name,bool access, DeviceBuffer buffer, uint size)> Buffers { get; private set; } = new();
         public ResourceSet Resources { get; set; } = null!;
 
         public static Dictionary<string, KumaSwapchain> SwapChains = new();
@@ -191,6 +262,14 @@ namespace KumaEngine.Rendering
             Pipeline = factory.CreateGraphicsPipeline(ref Descriptor);
         }
 
+        public KumaPass(ResourceFactory factory, ComputePipelineDescription pipelineDescription)
+        {
+            ComputeDescriptor = pipelineDescription;
+            Pipeline = factory.CreateComputePipeline(ref ComputeDescriptor);
+
+            IsCompute = true;
+        }
+
         public static KumaPass FromFile(ResourceFactory factory,string set,PassFile result,KumaPipeline pipeline, List<VertexElementDescription> layoutElements)
         {
             List<ResourceLayoutElementDescription> staticResourceLayoutElementDescriptions = new();
@@ -198,35 +277,47 @@ namespace KumaEngine.Rendering
 
             foreach (var item in result.Uniforms)
             {
-                var enumValues = RoketPipelineUniforms.NULL;
+                var enumValues = KumaPipelineUniforms.NULL;
 
-                if (Enum.TryParse<RoketPipelineUniforms>(item.Value,true, out var parsedEnum))
+                if (Enum.TryParse<KumaPipelineUniforms>(item.Value,true, out var parsedEnum))
                     enumValues = parsedEnum;
 
                 switch (enumValues)
                 {
-                    case RoketPipelineUniforms.CameraProjView:
-                    case RoketPipelineUniforms.CameraProjViewInverse:
-                    case RoketPipelineUniforms.ObjectModelMatrix:
-                    case RoketPipelineUniforms.Lights:
-                    case RoketPipelineUniforms.CameraPos:
+                    case KumaPipelineUniforms.CameraProjView:
+                    case KumaPipelineUniforms.CameraProjViewInverse:
+                    case KumaPipelineUniforms.ObjectModelMatrix:
+                    case KumaPipelineUniforms.Lights:
+                    case KumaPipelineUniforms.CameraPos:
                         staticResourceLayoutElementDescriptions.Add(
                             new ResourceLayoutElementDescription(item.Key, ResourceKind.UniformBuffer, ShaderStages.Vertex | ShaderStages.Fragment)
                         );
                         break;
-                    case RoketPipelineUniforms.LinearSamplerCube:
-                    case RoketPipelineUniforms.LinearSampler2D:
-                    case RoketPipelineUniforms.LinearSampler3D:
+                    case KumaPipelineUniforms.LinearSamplerCube:
+                    case KumaPipelineUniforms.LinearSampler2D:
+                    case KumaPipelineUniforms.LinearSampler3D:
                         dynamicResourceLayoutElementDescriptions.AddRange(
                             new ResourceLayoutElementDescription(item.Key+"Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
                             new ResourceLayoutElementDescription(item.Key+"Samp", ResourceKind.Sampler, ShaderStages.Fragment)
                         );
                         break;
-                    case RoketPipelineUniforms.NULL:
-                        staticResourceLayoutElementDescriptions.AddRange(
-                            new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
-                            new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment)
-                        );
+                    case KumaPipelineUniforms.NULL:
+                        if (SwapChains.Any(x => x.Value != null && x.Value.Attachments.ContainsKey(item.Value)))
+                            staticResourceLayoutElementDescriptions.AddRange(
+                                new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+                                new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment)
+                            );
+                        else
+                        {
+                            var (name, access, size) = ParseBuffer(item.Value);
+
+                            staticResourceLayoutElementDescriptions.AddRange(
+                                new ResourceLayoutElementDescription(
+                                    name, 
+                                    access ? ResourceKind.StructuredBufferReadWrite : ResourceKind.StructuredBufferReadOnly,
+                                    ShaderStages.Vertex | ShaderStages.Fragment)
+                            );
+                        }
                         break;
                     default:
                         break;
@@ -242,7 +333,121 @@ namespace KumaEngine.Rendering
             if (!SwapChains.ContainsKey(result.Output))
                 SwapChains.Add(result.Output, new(factory, result.Output + ".json"));
 
-            var ret = new KumaPass(factory, new()
+            var ret = result.Type switch
+            {
+                KumaShaderType.Graphics => GetGraphicsPass(factory, result, set, new[] { sharedLayout, textureLayout }, layoutElements),
+                KumaShaderType.Compute => GetComputePass(factory, result, set, new[] { sharedLayout, textureLayout }),
+                _ => throw new Exception("Invalid shader type in pipeline definition")
+            };
+
+            ret.definition = result;
+
+            ret.swapchain = SwapChains[result.Output];
+
+            List<BindableResource> bindableResources = new();
+
+            foreach (var item in result.Uniforms)
+            {
+                var enumValues = KumaPipelineUniforms.NULL;
+
+                if (Enum.TryParse<KumaPipelineUniforms>(item.Value,true, out var parsedEnum))
+                    enumValues = parsedEnum;
+
+                switch (enumValues)
+                {
+                    case KumaPipelineUniforms.CameraProjView:
+                        bindableResources.Add(Camera._cameraProjViewBuffer);
+                        break;
+                    case KumaPipelineUniforms.CameraProjViewInverse:
+                        bindableResources.Add(Camera._cameraProjViewInverseBuffer);
+                        break;
+                    case KumaPipelineUniforms.ObjectModelMatrix:
+                        bindableResources.Add(pipeline.ModelBuffer);
+                        break;
+                    case KumaPipelineUniforms.Lights:
+                        bindableResources.Add(KumaScene.PointLightBuffer);
+                        break;
+                    case KumaPipelineUniforms.CameraPos:
+                        bindableResources.Add(Camera._cameraPosBuffer);
+                        break;
+                    case KumaPipelineUniforms.NULL:
+                        var tex = SwapChains.FirstOrDefault(x => x.Value != null && x.Value.Attachments.ContainsKey(item.Value));
+
+                        if(tex.Value != null)
+                        {
+                            bindableResources.Add(tex.Value.Attachments[item.Value]);
+                            bindableResources.Add(DefinitionFile.Game.GraphicsDevice.Aniso4xSampler);
+
+                            continue;
+                        }
+
+                        var (name, access, size) = ParseBuffer(item.Value);
+
+                        if (pipeline.Passes.Any(x => x.Buffers.Any(b => b.name == name)))
+                        {
+                            var existingBuffer = pipeline.Passes.SelectMany(x => x.Buffers).First(b => b.name == name);
+
+                            if (existingBuffer.access != access || existingBuffer.size != size)
+                                throw new Exception($"Buffer \"{name}\" has conflicting declarations in the pipeline definition");
+
+                            bindableResources.Add(existingBuffer.buffer);
+                            continue;
+                        }
+
+                        var buffer = factory.CreateBuffer(
+                            new(
+                                size,
+                                access ? BufferUsage.StructuredBufferReadWrite : BufferUsage.StructuredBufferReadOnly
+                            )
+                        );
+
+                        ret.Buffers.Add((name, access, buffer, size));
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            ResourceSetDescription resourceSetDescription = new ResourceSetDescription(sharedLayout, bindableResources.ToArray());
+            var _sharedResourceSet = factory.CreateResourceSet(resourceSetDescription);
+
+            ret.Resources = _sharedResourceSet;
+
+            return ret;
+        }
+
+        static (string,bool,uint) ParseBuffer(string Value)
+        {
+            var parts = Value.Split(';');
+
+            if (parts.Length != 3)
+                throw new Exception(
+                    $"Invalid buffer declaration: \"{Value}\", " +
+                    $"must be: \"<name>;<access>;<size>\""
+                );
+
+            if (new[] { "ro", "rw" }.Contains(parts[1].Trim().ToLower()))
+                throw new Exception(
+                    $"Invalid buffer access type: \"{parts[1]}\", " +
+                    $"must be either \"ro\" or \"rw\""
+                );
+
+            var name = parts[0].Trim();
+            bool access = parts[1].Trim().ToLower() == "rw";
+            uint size = uint.Parse(parts[2].Trim(), System.Globalization.NumberStyles.Any);
+
+            return (name, access, size);
+        }
+
+        static KumaPass GetGraphicsPass(
+            ResourceFactory factory,
+            PassFile result, 
+            string set, 
+            ResourceLayout[] layouts, 
+            List<VertexElementDescription> layoutElements
+        )
+        {
+            return new KumaPass(factory, new GraphicsPipelineDescription()
             {
                 BlendState = BlendStateDescription.SingleAlphaBlend,
                 DepthStencilState = new DepthStencilStateDescription(
@@ -257,58 +462,30 @@ namespace KumaEngine.Rendering
                     scissorTestEnabled: false
                 ),
                 PrimitiveTopology = PrimitiveTopology.TriangleList,
-                ResourceLayouts = [sharedLayout, textureLayout],
+                ResourceLayouts = layouts,
                 ShaderSet = new ShaderSetDescription(
                     vertexLayouts: [new(layoutElements.ToArray())],
                     shaders: Shaders.FromSPIRVVertFrag(factory, set, result.VertexShader, result.FragmentShader)
                 ),
                 Outputs = SwapChains[result.Output]?.Framebuffer.OutputDescription ?? DefinitionFile.Game.MainSwapchain.Framebuffer.OutputDescription
             });
+        }
 
-            ret.swapchain = SwapChains[result.Output];
-
-            List<BindableResource> bindableResources = new();
-
-            foreach (var item in result.Uniforms)
+        static KumaPass GetComputePass(
+            ResourceFactory factory,
+            PassFile result,
+            string set,
+            ResourceLayout[] layouts
+        )
+        {
+            return new KumaPass(factory, new ComputePipelineDescription()
             {
-                var enumValues = RoketPipelineUniforms.NULL;
-
-                if (Enum.TryParse<RoketPipelineUniforms>(item.Value,true, out var parsedEnum))
-                    enumValues = parsedEnum;
-
-                switch (enumValues)
-                {
-                    case RoketPipelineUniforms.CameraProjView:
-                        bindableResources.Add(Camera._cameraProjViewBuffer);
-                        break;
-                    case RoketPipelineUniforms.CameraProjViewInverse:
-                        bindableResources.Add(Camera._cameraProjViewInverseBuffer);
-                        break;
-                    case RoketPipelineUniforms.ObjectModelMatrix:
-                        bindableResources.Add(pipeline.ModelBuffer);
-                        break;
-                    case RoketPipelineUniforms.Lights:
-                        bindableResources.Add(KumaScene.PointLightBuffer);
-                        break;
-                    case RoketPipelineUniforms.CameraPos:
-                        bindableResources.Add(Camera._cameraPosBuffer);
-                        break;
-                    case RoketPipelineUniforms.NULL:
-                        var tex = SwapChains.First(x => x.Value != null && x.Value.Attachments.ContainsKey(item.Value));
-                        bindableResources.Add(tex.Value.Attachments[item.Value]);
-                        bindableResources.Add(DefinitionFile.Game.GraphicsDevice.Aniso4xSampler);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            ResourceSetDescription resourceSetDescription = new ResourceSetDescription(sharedLayout, bindableResources.ToArray());
-            var _sharedResourceSet = factory.CreateResourceSet(resourceSetDescription);
-
-            ret.Resources = _sharedResourceSet;
-
-            return ret;
+                ComputeShader = Shaders.FromSPIRVCompute(factory, set, result.ComputeShader),
+                ResourceLayouts = layouts,
+                ThreadGroupSizeX = result.ThreadGroupSizeX,
+                ThreadGroupSizeY = result.ThreadGroupSizeY,
+                ThreadGroupSizeZ = result.ThreadGroupSizeZ,
+            });
         }
     }
 
@@ -316,19 +493,19 @@ namespace KumaEngine.Rendering
     {
         public static void SetPass(this CommandList list, KumaPass pipeline) => list.SetPipeline(pipeline.Pipeline);
 
-        public static VertexElementFormat ToFormat(this RoketVertexElement element) => element switch
+        public static VertexElementFormat ToFormat(this KumaVertexElement element) => element switch
         {
-            RoketVertexElement.UV => VertexElementFormat.Float2,
-            RoketVertexElement.UVW => VertexElementFormat.Float3,
-            RoketVertexElement.Position => VertexElementFormat.Float3,
-            RoketVertexElement.Normal => VertexElementFormat.Float3,
-            RoketVertexElement.Color => VertexElementFormat.Float4,
-            RoketVertexElement.Tangent => VertexElementFormat.Float3,
+            KumaVertexElement.UV => VertexElementFormat.Float2,
+            KumaVertexElement.UVW => VertexElementFormat.Float3,
+            KumaVertexElement.Position => VertexElementFormat.Float3,
+            KumaVertexElement.Normal => VertexElementFormat.Float3,
+            KumaVertexElement.Color => VertexElementFormat.Float4,
+            KumaVertexElement.Tangent => VertexElementFormat.Float3,
             _ => throw new ArgumentOutOfRangeException()
         };
     }
 
-    public enum RoketPipelineUniforms
+    public enum KumaPipelineUniforms
     {
         CameraProjView,
         CameraProjViewInverse,
@@ -340,7 +517,7 @@ namespace KumaEngine.Rendering
         Lights,
         NULL
     }
-    public enum RoketVertexElement
+    public enum KumaVertexElement
     {
         UV,
         UVW,
@@ -350,10 +527,16 @@ namespace KumaEngine.Rendering
         Tangent,
     }
 
+    public enum KumaShaderType
+    {
+        Graphics,
+        Compute
+    }
+
     public class PipelineFile
     {
         public List<PassFile> Passes = new();
-        public Dictionary<string, RoketVertexElement> VertexDefinition = new();
+        public Dictionary<string, KumaVertexElement> VertexDefinition = new();
     }
 
     public class PassFile
@@ -362,6 +545,14 @@ namespace KumaEngine.Rendering
         public string VertexShader = "";
         public string FragmentShader = "";
         public string ComputeShader = "";
+        public KumaShaderType Type = KumaShaderType.Graphics;
+        public uint ThreadGroupSizeX = 1;
+        public uint ThreadGroupSizeY = 1;
+        public uint ThreadGroupSizeZ = 1;
+        public uint GroupCountX = 1;
+        public uint GroupCountY = 1;
+        public uint GroupCountZ = 1;
+        public bool AutoGroups = false;
 
         public Dictionary<string, string> Uniforms = new();
     }
