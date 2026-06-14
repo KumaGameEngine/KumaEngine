@@ -92,6 +92,10 @@
           "type": "boolean",
           "default": false
         },
+        "ComputePerObject ": {
+          "type": "boolean",
+          "default": false
+        },
         "Uniforms": {
           "type": "object",
           "default": {},

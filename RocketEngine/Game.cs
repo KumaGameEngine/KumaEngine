@@ -12,7 +12,10 @@ namespace KumaEngine
 {
     public class Game : KumaApplication
     {
-        public CommandList CommandList { get; private set; }
+        public CommandList GraphicsList { get; private set; }
+        public CommandList ComputeList { get; private set; }
+        public Fence GraphicsFence { get; private set; }
+        public Fence ComputeFence { get; private set; }
 
         KumaPipeline SkyboxPipeline;
         Model SkyboxModel;
@@ -35,12 +38,16 @@ namespace KumaEngine
 
             KumaPass.SwapChains.Add("MainSwapchain", null!);
 
-            CommandList = factory.CreateCommandList();
+            GraphicsList = factory.CreateCommandList();
+            ComputeList = factory.CreateCommandList();
+
+            GraphicsFence = factory.CreateFence(false);
+            ComputeFence = factory.CreateFence(false);
 
             Rml.SetRenderInterface(new KumaUiRenderInterface(
                 this,
                 KumaPipeline.FromSet(factory, "ui"),
-                CommandList
+                GraphicsList
             ));
             Rml.SetSystemInterface(new KumaSystemInterface());
             Rml.Initialise();
@@ -87,41 +94,38 @@ namespace KumaEngine
 
             if (KumaScene.CurrentCamera == null) return;
 
-            if (LightAPI.UpdateLights)
-            {
-                KumaScene.UploadLights(GraphicsDevice);
-                LightAPI.UpdateLights = false;
-            }
+            KumaScene.UploadLights(GraphicsDevice);
 
-            CommandList.Begin();
+            GraphicsList.Begin();
+            ComputeList.Begin();
 
-            KumaScene.CurrentCamera.Update(CommandList);
+            KumaScene.CurrentCamera.Update(GraphicsList);
 
             foreach (var item in KumaPass.SwapChains.Values)
             {
                 if (item == null) continue;
 
-                CommandList.SetFramebuffer(item.Framebuffer);
+                GraphicsList.SetFramebuffer(item.Framebuffer);
 
                 for (int i = 0; i < item.ClearColorIDS.Count; i++)
-                    if (item.ClearColorIDS[i]) CommandList.ClearColorTarget((uint)i, RgbaFloat.White);
+                    if (item.ClearColorIDS[i]) GraphicsList.ClearColorTarget((uint)i, RgbaFloat.White);
 
-                if (item.ClearDepth) CommandList.ClearDepthStencil(1f);
+                if (item.ClearDepth) GraphicsList.ClearDepthStencil(1f);
             }
 
-            CommandList.SetFramebuffer(MainSwapchain.Framebuffer);
-            CommandList.ClearColorTarget(0, RgbaFloat.White);
-            CommandList.ClearDepthStencil(1f);
+            GraphicsList.SetFramebuffer(MainSwapchain.Framebuffer);
+            GraphicsList.ClearColorTarget(0, RgbaFloat.White);
+            GraphicsList.ClearDepthStencil(1f);
 
             foreach (var item in PipelineAPI.PipelineHandles.Values)
             {
                 var go = KumaScene.CurrentGameObjects.Where(x => x.Pipeline == item).ToArray();
 
-                if (go.Length > 0) item.Draw(CommandList, go);
+                if (go.Length > 0) item.Draw(GraphicsList, ComputeList, go);
             }
 
             if (KumaScene.CurrentSkyboxMaterial != null)
-                SkyboxPipeline.Draw(CommandList, SkyboxModel, KumaScene.CurrentSkyboxMaterial);
+                SkyboxPipeline.Draw(GraphicsList, SkyboxModel, KumaScene.CurrentSkyboxMaterial);
 
             foreach (var item in UIAPI.UISurfaceHandles)
             {
@@ -129,10 +133,17 @@ namespace KumaEngine
                 item.Value.Render();
             }
 
-            CommandList.End();
+            ComputeList.End();
 
-            GraphicsDevice.SubmitCommands(CommandList);
-            GraphicsDevice.WaitForIdle();
+            GraphicsDevice.SubmitCommands(ComputeList,ComputeFence);
+            GraphicsDevice.WaitForFence(ComputeFence, 5000000000);
+            GraphicsDevice.ResetFence(ComputeFence);
+
+            GraphicsList.End();
+
+            GraphicsDevice.SubmitCommands(GraphicsList,GraphicsFence);
+            GraphicsDevice.WaitForFence(GraphicsFence, 5000000000);
+            GraphicsDevice.ResetFence(GraphicsFence);
 
             GraphicsDevice.SwapBuffers(MainSwapchain);
         }

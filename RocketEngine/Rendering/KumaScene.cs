@@ -1,4 +1,5 @@
-﻿using Veldrid;
+﻿using System.Numerics;
+using Veldrid;
 
 namespace KumaEngine.Rendering
 {
@@ -32,14 +33,20 @@ namespace KumaEngine.Rendering
 
         public static unsafe void UploadLights(GraphicsDevice device)
         {
-            LightUploadScheme scheme = new();
-            scheme.PointLightCount = (uint)Math.Min(
-                CurrentPointLights.Count,
-                LightUploadScheme.MAX_POINT_LIGHTS
-            );
+            var sorted = CurrentPointLights
+                .OrderByDescending(light =>
+                {
+                    float distSq = Vector3.DistanceSquared(CurrentCamera.Position, light.Position);
+                    distSq = Math.Max(distSq, 0.0001f);
+                    return (light.Intensity * light.Color.Length()) / distSq;
+                })
+                .Take(LightUploadScheme.MAX_POINT_LIGHTS)
+                .ToList();
 
-            for (int i = 0; i < scheme.PointLightCount; i++)
-                scheme.PointLights[i] = CurrentPointLights[i].reference;
+            LightUploadScheme scheme = new();
+            scheme.PointLightCount = (uint)sorted.Count;
+            for (int i = 0; i < sorted.Count; i++)
+                scheme.PointLights[i] = sorted[i].reference;
 
             device.UpdateBuffer(PointLightBuffer, 0, ref scheme);
         }
