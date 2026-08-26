@@ -76,7 +76,7 @@ namespace KumaEngine.Rendering
         {
             cl.UpdateBuffer(_cameraProjViewBuffer,0, new MatrixPair(_viewMatrix, _projectionMatrix));
             cl.UpdateBuffer(_cameraProjViewInverseBuffer,0, new MatrixPair(Matrix4x4.Invert(_viewMatrix, out var viewInverse) ? viewInverse : _viewMatrix, Matrix4x4.Invert(_projectionMatrix, out var projInverse) ? projInverse : _projectionMatrix));
-            cl.UpdateBuffer(_cameraPosBuffer, 0, _position);
+            cl.UpdateBuffer(_cameraPosBuffer, 0, GetCameraInfo());
         }
 
         private float Clamp(float value, float min, float max)
@@ -137,16 +137,18 @@ namespace KumaEngine.Rendering
 
         public CameraInfo GetCameraInfo() => new CameraInfo
         {
-            CameraPosition_WorldSpace = _position,
-            CameraLookDirection = _lookDirection
+            Position = _position,
+            ScreenSize = new(_windowWidth,_windowHeight)
         };
     }
 
     [StructLayout(LayoutKind.Sequential,Pack = 1)]
     public struct CameraInfo
     {
-        public Vector3 CameraPosition_WorldSpace;
-        public Vector3 CameraLookDirection;
+        public Vector3 Position;
+        float _pad0;
+        public Vector2 ScreenSize;
+        Vector2 _pad1;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

@@ -12,7 +12,10 @@
       "FragmentShader": "fragment.glsl",
 
       "Uniforms": {
-        "Model": "ObjectModelMatrix",
+        "Model": "ObjectModelMatrix"
+      },
+
+      "Samplers": {
         "Image": "LinearSampler2D"
       },
 

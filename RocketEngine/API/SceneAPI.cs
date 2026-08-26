@@ -58,8 +58,8 @@ namespace KumaEngine.API
                 handle, 
                 new KumaScene(
                     new Camera(
-                        DefinitionFile.Game.Window.Width, 
-                        DefinitionFile.Game.Window.Height, 
+                        DefinitionFile.Game.MainSwapchain.Framebuffer.Width, 
+                        DefinitionFile.Game.MainSwapchain.Framebuffer.Height, 
                         DefinitionFile.Game.ResourceFactory
                     )
                 )

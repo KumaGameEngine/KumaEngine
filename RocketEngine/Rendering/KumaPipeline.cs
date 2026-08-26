@@ -82,7 +82,7 @@ namespace KumaEngine.Rendering
                 Converters = [new StringEnumConverter()]
             };
 
-            var defpath = Path.Combine("Data","Shaders", set, "pipeline.json");
+            var defpath = Path.Combine("Data", "Shaders", set, "pipeline.json");
 
             if (!File.Exists(defpath)) throw new Exception("Could not find pipeline definition file");
 
@@ -97,9 +97,21 @@ namespace KumaEngine.Rendering
             pipeline.VertexDefinition = result.VertexDefinition;
 
             foreach (var item in result.Passes)
-                pipeline.Passes.Add(KumaPass.FromFile(factory,set,item,pipeline,layoutElements));
+                pipeline.Passes.Add(KumaPass.FromFile(factory, set, item, pipeline, layoutElements));
 
             return pipeline;
+        }
+
+        static (uint x, uint y, uint z) ComputeGroupCounts(PassFile definition)
+        {
+            if (definition.AutoGroups)
+            {
+                uint groupsX = (DefinitionFile.Game.Window.Width + definition.ThreadGroupSizeX - 1) / definition.ThreadGroupSizeX;
+                uint groupsY = (DefinitionFile.Game.Window.Height + definition.ThreadGroupSizeY - 1) / definition.ThreadGroupSizeY;
+                return (groupsX, groupsY, 1u);
+            }
+
+            return (definition.GroupCountX, definition.GroupCountY, definition.GroupCountZ);
         }
 
         public void Draw(CommandList list, Model model, KumaMaterial mat)
@@ -110,6 +122,10 @@ namespace KumaEngine.Rendering
             {
                 if (item.IsCompute)
                 {
+                    var (groupsX, groupsY, groupsZ) = ComputeGroupCounts(item.definition);
+
+                    item.EnsureAutoBufferSize(groupsX * groupsY * groupsZ);
+
                     list.SetPipeline(item.Pipeline);
                     list.SetComputeResourceSet(0, item.Resources);
 
@@ -123,18 +139,7 @@ namespace KumaEngine.Rendering
                         }
                     }
 
-                    if (item.definition.AutoGroups)
-                    {
-                        uint groupsX = (DefinitionFile.Game.Window.Width + item.definition.ThreadGroupSizeX - 1) / item.definition.ThreadGroupSizeX;
-                        uint groupsY = (DefinitionFile.Game.Window.Height + item.definition.ThreadGroupSizeY - 1) / item.definition.ThreadGroupSizeY;
-
-                        list.Dispatch(groupsX, groupsY, 1);
-                    }
-                    else list.Dispatch(
-                        item.definition.GroupCountX,
-                        item.definition.GroupCountY,
-                        item.definition.GroupCountZ
-                    );
+                    list.Dispatch(groupsX, groupsY, groupsZ);
 
                     continue;
                 }
@@ -148,7 +153,7 @@ namespace KumaEngine.Rendering
                 list.SetPipeline(item.Pipeline);
                 list.SetGraphicsResourceSet(0, item.Resources);
 
-                if (mat != null)
+                if (item.definition.UseMaterial && mat != null)
                     for (int i = 0; i < mat.Resources.Count; i++) list.SetGraphicsResourceSet((uint)i + 1, mat.Resources[i]);
 
                 list.SetVertexBuffer(0, model.VertexBuffer);
@@ -196,45 +201,35 @@ namespace KumaEngine.Rendering
 
                 if (pass.IsCompute)
                 {
+                    var (groupsX, groupsY, groupsZ) = ComputeGroupCounts(pass.definition);
+
+                    pass.EnsureAutoBufferSize(groupsX * groupsY * groupsZ);
+
                     ComputeList.SetPipeline(pass.Pipeline);
                     ComputeList.SetComputeResourceSet(0, pass.Resources);
 
                     KumaMaterial lastBoundMaterial = null!;
                     var sortedObjects = obj.OrderBy(x => x.Material?.GetHashCode() ?? 0);
 
-                    void Dispatch()
-                    {
-                        if (pass.definition.AutoGroups)
-                        {
-                            uint groupsX = (DefinitionFile.Game.Window.Width + pass.definition.ThreadGroupSizeX - 1) / pass.definition.ThreadGroupSizeX;
-                            uint groupsY = (DefinitionFile.Game.Window.Height + pass.definition.ThreadGroupSizeY - 1) / pass.definition.ThreadGroupSizeY;
-
-                            ComputeList.Dispatch(groupsX, groupsY, 1);
-                        }
-                        else ComputeList.Dispatch(
-                            pass.definition.GroupCountX,
-                            pass.definition.GroupCountY,
-                            pass.definition.GroupCountZ
-                        );
-                    }
+                    void Dispatch() => ComputeList.Dispatch(groupsX, groupsY, groupsZ);
 
                     if (pass.definition.ComputePerObject) foreach (var gameObject in sortedObjects)
-                    {
-                        ComputeList.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
-
-                        uint currentBindSlot = 1;
-
-                        if (gameObject.Material != null && gameObject.Material != lastBoundMaterial)
                         {
-                            for (int i = 0; i < gameObject.Material.Resources.Count; i++)
-                            {
-                                ComputeList.SetComputeResourceSet(currentBindSlot++, gameObject.Material.Resources[i]);
-                            }
-                            lastBoundMaterial = gameObject.Material;
-                        }
+                            ComputeList.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
 
-                        Dispatch();
-                    }
+                            uint currentBindSlot = 1;
+
+                            if (pass.definition.UseMaterial && gameObject.Material != null && gameObject.Material != lastBoundMaterial)
+                            {
+                                for (int i = 0; i < gameObject.Material.Resources.Count; i++)
+                                {
+                                    ComputeList.SetComputeResourceSet(currentBindSlot++, gameObject.Material.Resources[i]);
+                                }
+                                lastBoundMaterial = gameObject.Material;
+                            }
+
+                            Dispatch();
+                        }
                     else Dispatch();
                     continue;
                 }
@@ -259,7 +254,7 @@ namespace KumaEngine.Rendering
                 {
                     GraphicsList.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
 
-                    if (gameObject.Material != null && gameObject.Material != lastBoundGraphicsMaterial)
+                    if (pass.definition.UseMaterial && gameObject.Material != null && gameObject.Material != lastBoundGraphicsMaterial)
                     {
                         for (int i = 0; i < gameObject.Material.Resources.Count; i++)
                         {
@@ -294,14 +289,67 @@ namespace KumaEngine.Rendering
         public PassFile definition { get; private set; }
 
         public List<(string name, DeviceBuffer buffer)> ReadBuffer { get; private set; } = new();
-        public List<(string name,bool access, DeviceBuffer buffer, uint size)> Buffers { get; private set; } = new();
+        public List<(string name, bool access, DeviceBuffer buffer, uint size)> Buffers { get; private set; } = new();
         public ResourceSet Resources { get; set; } = null!;
 
         public static Dictionary<string, KumaSwapchain> SwapChains = new();
 
         public KumaSwapchain swapchain;
 
-        public KumaPass(ResourceFactory factory,GraphicsPipelineDescription pipelineDescription) 
+        public ResourceFactory Factory { get; internal set; } = null!;
+
+        public ResourceLayout SharedLayout { get; internal set; } = null!;
+
+        public List<BindableResource> BindableResources { get; internal set; } = new();
+
+        public class AutoBufferSlot
+        {
+            public string Name = "";
+            public bool ReadWrite;
+            public uint Stride;
+            public int BindableIndex;
+            public uint LastGroupCount = uint.MaxValue;
+        }
+
+        public List<AutoBufferSlot> AutoBuffers { get; private set; } = new();
+
+        public List<(KumaPass consumer, int bindableIndex)> Consumers { get; private set; } = new();
+
+        public void EnsureAutoBufferSize(uint totalGroupCount)
+        {
+            if (AutoBuffers.Count == 0) return;
+
+            foreach (var auto in AutoBuffers)
+            {
+                if (auto.LastGroupCount == totalGroupCount) continue;
+
+                uint newSize = Math.Max(totalGroupCount, 1u) * auto.Stride;
+
+                var newBuffer = Factory.CreateBuffer(new (
+                    newSize,
+                    auto.ReadWrite ? BufferUsage.StructuredBufferReadWrite : BufferUsage.StructuredBufferReadOnly,
+                    auto.Stride
+                ));
+
+                int bufIdx = Buffers.FindIndex(b => b.name == auto.Name);
+                if (bufIdx >= 0) Buffers[bufIdx] = (auto.Name, auto.ReadWrite, newBuffer, newSize);
+
+                RebindResource(auto.BindableIndex, newBuffer);
+
+                foreach (var (consumer, consumerIndex) in Consumers)
+                    consumer.RebindResource(consumerIndex, newBuffer);
+
+                auto.LastGroupCount = totalGroupCount;
+            }
+        }
+
+        public void RebindResource(int bindableIndex, BindableResource newResource)
+        {
+            BindableResources[bindableIndex] = newResource;
+            Resources = Factory.CreateResourceSet(new ResourceSetDescription(SharedLayout, BindableResources.ToArray()));
+        }
+
+        public KumaPass(ResourceFactory factory, GraphicsPipelineDescription pipelineDescription)
         {
             Descriptor = pipelineDescription;
             Pipeline = factory.CreateGraphicsPipeline(ref Descriptor);
@@ -315,7 +363,7 @@ namespace KumaEngine.Rendering
             IsCompute = true;
         }
 
-        public static KumaPass FromFile(ResourceFactory factory,string set,PassFile result,KumaPipeline pipeline, List<VertexElementDescription> layoutElements)
+        public static KumaPass FromFile(ResourceFactory factory, string set, PassFile result, KumaPipeline pipeline, List<VertexElementDescription> layoutElements)
         {
             List<ResourceLayoutElementDescription> staticResourceLayoutElementDescriptions = new();
             List<ResourceLayoutElementDescription> dynamicResourceLayoutElementDescriptions = new();
@@ -324,7 +372,7 @@ namespace KumaEngine.Rendering
             {
                 var enumValues = KumaPipelineUniforms.NULL;
 
-                if (Enum.TryParse<KumaPipelineUniforms>(item.Value,true, out var parsedEnum))
+                if (Enum.TryParse<KumaPipelineUniforms>(item.Value, true, out var parsedEnum))
                     enumValues = parsedEnum;
 
                 switch (enumValues)
@@ -335,29 +383,21 @@ namespace KumaEngine.Rendering
                     case KumaPipelineUniforms.Lights:
                     case KumaPipelineUniforms.CameraPos:
                         staticResourceLayoutElementDescriptions.Add(
-                            new ResourceLayoutElementDescription(item.Key, ResourceKind.UniformBuffer, ShaderStages.Vertex | ShaderStages.Fragment)
-                        );
-                        break;
-                    case KumaPipelineUniforms.LinearSamplerCube:
-                    case KumaPipelineUniforms.LinearSampler2D:
-                    case KumaPipelineUniforms.LinearSampler3D:
-                        dynamicResourceLayoutElementDescriptions.AddRange(
-                            new ResourceLayoutElementDescription(item.Key+"Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
-                            new ResourceLayoutElementDescription(item.Key+"Samp", ResourceKind.Sampler, ShaderStages.Fragment)
+                            new ResourceLayoutElementDescription(item.Key, ResourceKind.UniformBuffer, ShaderStages.Vertex | ShaderStages.Fragment | ShaderStages.Compute)
                         );
                         break;
                     case KumaPipelineUniforms.NULL:
                         if (SwapChains.Any(x => x.Value != null && x.Value.Attachments.ContainsKey(item.Value)))
                             staticResourceLayoutElementDescriptions.AddRange(
-                                new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
-                                new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment)
+                                new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment | ShaderStages.Compute),
+                                new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment | ShaderStages.Compute)
                             );
                         else
                         {
                             if (pipeline.Passes.Any(x => x.Buffers.Any(b => b.name == item.Value)))
                             {
                                 var existingBuffer = pipeline.Passes.SelectMany(x => x.Buffers).First(b => b.name == item.Value);
-                                
+
                                 staticResourceLayoutElementDescriptions.AddRange(
                                     new ResourceLayoutElementDescription(
                                         item.Key,
@@ -368,18 +408,40 @@ namespace KumaEngine.Rendering
                                 continue;
                             }
 
-                            var (name, access, size, stride) = ParseBuffer(item.Value);
+                            var (_, access, _, _, _) = ParseBuffer(item.Value, result);
 
-                            if (result.Type != KumaShaderType.Compute) 
-                                throw new Exception("Structured buffers can only be used in compute shaders.");
+                            if (result.Type != KumaShaderType.Compute)
+                                throw new Exception("Structured buffers can only be created in compute shaders.");
 
                             staticResourceLayoutElementDescriptions.AddRange(
                                 new ResourceLayoutElementDescription(
-                                    item.Key, 
+                                    item.Key,
                                     access ? ResourceKind.StructuredBufferReadWrite : ResourceKind.StructuredBufferReadOnly,
                                     ShaderStages.Compute)
                             );
                         }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            foreach (var item in result.Samplers)
+            {
+                var enumValues = KumaPipelineUniforms.NULL;
+
+                if (Enum.TryParse<KumaPipelineUniforms>(item.Value, true, out var parsedEnum))
+                    enumValues = parsedEnum;
+
+                switch (enumValues)
+                {
+                    case KumaPipelineUniforms.LinearSamplerCube:
+                    case KumaPipelineUniforms.LinearSampler2D:
+                    case KumaPipelineUniforms.LinearSampler3D:
+                        dynamicResourceLayoutElementDescriptions.AddRange(
+                            new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment | ShaderStages.Compute),
+                            new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment | ShaderStages.Compute)
+                        );
                         break;
                     default:
                         break;
@@ -406,13 +468,16 @@ namespace KumaEngine.Rendering
 
             ret.swapchain = SwapChains[result.Output];
 
+            ret.Factory = factory;
+            ret.SharedLayout = sharedLayout;
+
             List<BindableResource> bindableResources = new();
 
             foreach (var item in result.Uniforms)
             {
                 var enumValues = KumaPipelineUniforms.NULL;
 
-                if (Enum.TryParse<KumaPipelineUniforms>(item.Value,true, out var parsedEnum))
+                if (Enum.TryParse<KumaPipelineUniforms>(item.Value, true, out var parsedEnum))
                     enumValues = parsedEnum;
 
                 switch (enumValues)
@@ -435,7 +500,7 @@ namespace KumaEngine.Rendering
                     case KumaPipelineUniforms.NULL:
                         var tex = SwapChains.FirstOrDefault(x => x.Value != null && x.Value.Attachments.ContainsKey(item.Value));
 
-                        if(tex.Value != null)
+                        if (tex.Value != null)
                         {
                             bindableResources.Add(tex.Value.Attachments[item.Value]);
                             bindableResources.Add(DefinitionFile.Game.GraphicsDevice.Aniso4xSampler);
@@ -445,32 +510,55 @@ namespace KumaEngine.Rendering
 
                         if (pipeline.Passes.Any(x => x.Buffers.Any(b => b.name == item.Value)))
                         {
-                            var existingBuffer = pipeline.Passes.SelectMany(x => x.Buffers).First(b => b.name == item.Value);
+                            var producingPass = pipeline.Passes.First(x => x.Buffers.Any(b => b.name == item.Value));
+                            var existingBuffer = producingPass.Buffers.First(b => b.name == item.Value);
 
                             ret.ReadBuffer.Add((item.Value, existingBuffer.buffer));
+
+                            producingPass.Consumers.Add((ret, bindableResources.Count));
 
                             bindableResources.Add(existingBuffer.buffer);
                             continue;
                         }
 
-                        var (name, access, size,stride) = ParseBuffer(item.Value);
+                        var (name, access, isAuto, size, stride) = ParseBuffer(item.Value, result);
+
+                        uint initialGroupCount = isAuto
+                            ? (result.AutoGroups ? 1u : result.GroupCountX * result.GroupCountY * result.GroupCountZ)
+                            : 0u;
+
+                        uint bufSize = isAuto ? Math.Max(initialGroupCount, 1u) * stride : size;
 
                         var buffer = factory.CreateBuffer(
                             new(
-                                size,
+                                bufSize,
                                 access ? BufferUsage.StructuredBufferReadWrite : BufferUsage.StructuredBufferReadOnly,
                                 stride
                             )
                         );
 
-                        ret.Buffers.Add((name, access, buffer, size));
+                        ret.Buffers.Add((name, access, buffer, bufSize));
 
-                        bindableResources.Add(ret.Buffers.Last().buffer);
+                        if (isAuto)
+                        {
+                            ret.AutoBuffers.Add(new AutoBufferSlot
+                            {
+                                Name = name,
+                                ReadWrite = access,
+                                Stride = stride,
+                                BindableIndex = bindableResources.Count,
+                                LastGroupCount = initialGroupCount
+                            });
+                        }
+
+                        bindableResources.Add(buffer);
                         break;
                     default:
                         break;
                 }
             }
+
+            ret.BindableResources = bindableResources;
 
             ResourceSetDescription resourceSetDescription = new ResourceSetDescription(sharedLayout, bindableResources.ToArray());
             var _sharedResourceSet = factory.CreateResourceSet(resourceSetDescription);
@@ -480,14 +568,14 @@ namespace KumaEngine.Rendering
             return ret;
         }
 
-        static (string,bool,uint,uint) ParseBuffer(string Value)
+        static (string name, bool access, bool isAuto, uint size, uint stride) ParseBuffer(string Value, PassFile file)
         {
             var parts = Value.Split(';');
 
             if (parts.Length != 4 && parts.Length != 3)
                 throw new Exception(
                     $"Invalid buffer declaration: \"{Value}\", " +
-                    $"must be: \"<name>;<access>;<size>;[stride]\""
+                    $"must be: \"<name>;<access>;<count>|auto;[stride]\""
                 );
 
             if (!new[] { "ro", "rw" }.Contains(parts[1].Trim().ToLower()))
@@ -498,17 +586,40 @@ namespace KumaEngine.Rendering
 
             var name = parts[0].Trim();
             bool access = parts[1].Trim().ToLower() == "rw";
-            uint size = uint.Parse(parts[2].Trim(), System.Globalization.NumberStyles.Any);
-            uint stride = parts.Length == 4 ? uint.Parse(parts[3].Trim(), System.Globalization.NumberStyles.Any) : size;
+            var cstr = parts[2].Trim();
+            bool isAuto = cstr.ToLower() == "auto";
 
-            return (name, access, size,stride);
+            if (isAuto)
+            {
+                if (parts.Length != 4)
+                    throw new Exception(
+                        $"Auto-sized buffer \"{name}\" must declare an explicit stride: " +
+                        $"\"{name};{(access ? "rw" : "ro")};auto;<stride>\""
+                    );
+
+                if (file.Type != KumaShaderType.Compute)
+                    throw new Exception(
+                        $"Auto-sized buffer \"{name}\" is only valid on a compute pass, " +
+                        "since its size is derived from that pass's dispatch dimensions."
+                    );
+
+                uint autoStride = uint.Parse(parts[3].Trim(), System.Globalization.NumberStyles.Any);
+
+                return (name, access, true, 0u, autoStride);
+            }
+
+            uint count = uint.Parse(cstr, System.Globalization.NumberStyles.Any);
+            uint stride = parts.Length == 4 ? uint.Parse(parts[3].Trim(), System.Globalization.NumberStyles.Any) : count;
+            uint size = count * (stride == count ? 1 : stride);
+
+            return (name, access, false, size, stride);
         }
 
         static KumaPass GetGraphicsPass(
             ResourceFactory factory,
-            PassFile result, 
-            string set, 
-            ResourceLayout[] layouts, 
+            PassFile result,
+            string set,
+            ResourceLayout[] layouts,
             List<VertexElementDescription> layoutElements
         )
         {
@@ -607,9 +718,9 @@ namespace KumaEngine.Rendering
     public class PassFile
     {
         public string Output = "MainSwapchain";
-        public string VertexShader = "";
-        public string FragmentShader = "";
-        public string ComputeShader = "";
+        public string VertexShader = null!;
+        public string FragmentShader = null!;
+        public string ComputeShader = null!;
         public KumaShaderType Type = KumaShaderType.Graphics;
         public uint ThreadGroupSizeX = 1;
         public uint ThreadGroupSizeY = 1;
@@ -619,7 +730,9 @@ namespace KumaEngine.Rendering
         public uint GroupCountZ = 1;
         public bool AutoGroups = false;
         public bool ComputePerObject = false;
+        public bool UseMaterial = true;
 
         public Dictionary<string, string> Uniforms = new();
+        public Dictionary<string, string> Samplers = new();
     }
 }

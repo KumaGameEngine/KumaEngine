@@ -32,7 +32,7 @@ namespace KumaEngine
                 new BufferDescription((uint)(Unsafe.SizeOf<Matrix4x4>() * 2), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
             Camera._cameraPosBuffer = factory.CreateBuffer(
-                new BufferDescription((uint)(Unsafe.SizeOf<Vector3>() + 4), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+                new BufferDescription((uint)Unsafe.SizeOf<CameraInfo>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
             KumaScene.CreateLightBuffers(factory);
 

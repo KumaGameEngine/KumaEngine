@@ -114,22 +114,28 @@ namespace KumaEngine.API
 
         public static void PushVec3(this Lua lua, Vector3 vec)
         {
-            unsafe
-            {
-                var ptr = (Vector3*)lua.NewUserData(sizeof(Vector3));
-                *ptr = vec;
-            }
+            lua.NewTable();
+
+            lua.PushNumber(vec.X);
+            lua.SetField(-2, "x");
+
+            lua.PushNumber(vec.Y);
+            lua.SetField(-2, "y");
+
+            lua.PushNumber(vec.Z);
+            lua.SetField(-2, "z");
+
             lua.GetMetaTable(META);
             lua.SetMetaTable(-2);
         }
 
         public static Vector3 ToVec3(this Lua lua, int idx)
         {
-            unsafe
-            {
-                var ptr = (Vector3*)lua.ToUserData(idx);
-                return *ptr;
-            }
+            return new Vector3(
+                (float)lua.GetNumField(idx, "x"), 
+                (float)lua.GetNumField(idx, "y"), 
+                (float)lua.GetNumField(idx, "z")
+            );
         }
     }
 }

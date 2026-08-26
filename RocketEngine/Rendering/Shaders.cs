@@ -44,16 +44,29 @@ namespace KumaEngine.Rendering
 
         static byte[] PreProcessBytes(string file) => Encoding.Default.GetBytes(PreProcess(file));
 
-        public static Shader[] FromSPIRVVertFrag(ResourceFactory factory, string ShaderPackName, string vert,string frag) =>
-            factory.CreateFromSpirv(
-                new(ShaderStages.Vertex, PreProcessBytes(Path.Combine("Data","Shaders", ShaderPackName, vert)), "main"),
-                new(ShaderStages.Fragment, PreProcessBytes(Path.Combine("Data", "Shaders", ShaderPackName, frag)), "main"),
-                new()
+        public static Shader[] FromSPIRVVertFrag(ResourceFactory factory, string ShaderPackName, string vert,string frag)
+        {
+            var vertex = new ShaderDescription(
+                ShaderStages.Vertex, 
+                PreProcessBytes(Path.Combine("Data", "Shaders", ShaderPackName, vert)),
+                "main"
             );
+
+            var fragment = new ShaderDescription(
+                ShaderStages.Fragment,
+                frag is null ? GetDummyFragVert() : PreProcessBytes(Path.Combine("Data", "Shaders", ShaderPackName, frag)),
+                "main"
+            );
+
+            return factory.CreateFromSpirv(vertex, fragment, new());
+        }
         public static Shader FromSPIRVCompute(ResourceFactory factory, string ShaderPackName, string compute) =>
             factory.CreateFromSpirv(
                 new ShaderDescription(ShaderStages.Compute, PreProcessBytes(Path.Combine("Data", "Shaders",ShaderPackName, compute)),"main"),
                 new CrossCompileOptions()
             );
+
+        static byte[] GetDummyFragVert() => 
+            Encoding.Default.GetBytes("#version 450\nvoid main() {}");
     }
 }

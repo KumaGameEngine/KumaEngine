@@ -83,15 +83,6 @@ namespace KumaEngine.API
             });
             lua.SetField(-2, "destroy");
 
-            lua.PushSafeCFunction(ilua =>
-            {
-                var L = Lua.FromIntPtr(ilua);
-                var mat = L.ToMaterial(1);
-                GameObjectHandles[handle].Material = mat;
-                return 0;
-            });
-            lua.SetField(-2, "setMaterial");
-
             lua.NewTable();
 
             lua.PushSafeCFunction(ilua =>
@@ -107,6 +98,8 @@ namespace KumaEngine.API
                     case "position": L.PushVec3(pos); return 1;
                     case "rotation": L.PushVec3(rot); return 1;
                     case "scale": L.PushVec3(scl); return 1;
+                    case "model": L.PushModel(GameObjectHandles[handle].Model); return 1;
+                    case "material": L.PushMaterial(GameObjectHandles[handle].Material); return 1;
                     default: L.PushNil(); return 1;
                 }
             });
@@ -125,6 +118,8 @@ namespace KumaEngine.API
                     case "position": pos = L.ToVec3(3); break;
                     case "rotation": rot = L.ToVec3(3); break;
                     case "scale": scl = L.ToVec3(3); break;
+                    case "model": GameObjectHandles[handle].Model = L.ToModel(3); break;
+                    case "material": GameObjectHandles[handle].Material = L.ToMaterial(3); break;
                 }
 
                 GameObjectHandles[handle].Transform = ComposeTransform(pos, rot, scl);

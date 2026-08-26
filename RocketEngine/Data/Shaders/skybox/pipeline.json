@@ -11,7 +11,10 @@
 
       "Uniforms": {
         "ProjView": "CameraProjViewInverse",
-        "Model": "ObjectModelMatrix",
+        "Model": "ObjectModelMatrix"
+      },
+
+      "Samplers": {
         "Skybox": "LinearSamplerCube"
       },
 

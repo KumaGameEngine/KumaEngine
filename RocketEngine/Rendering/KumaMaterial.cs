@@ -52,7 +52,7 @@ namespace KumaEngine.Rendering
 
             foreach (var item in result.Textures)
             {
-                switch (item.Value)
+                switch (item.Value.Type)
                 {
                     case KumaPipelineUniforms.LinearSamplerCube:
                     case KumaPipelineUniforms.LinearSampler2D:
@@ -74,14 +74,14 @@ namespace KumaEngine.Rendering
 
             foreach (var item in result.Textures)
             {
-                switch (item.Value)
+                switch (item.Value.Type)
                 {
                     case KumaPipelineUniforms.LinearSamplerCube:
-                        bindableResources.Add(TextureExt.CubemapFromFile(device, factory, item.Key));
+                        bindableResources.Add(TextureExt.CubemapFromFile(device, factory, item.Value.File));
                         bindableResources.Add(device.Aniso4xSampler);
                         break;
                     case KumaPipelineUniforms.LinearSampler2D:
-                        bindableResources.Add(TextureExt.ViewFromFile(device, factory, item.Key));
+                        bindableResources.Add(TextureExt.ViewFromFile(device, factory, item.Value.File));
                         bindableResources.Add(device.Aniso4xSampler);
                         break;
                     case KumaPipelineUniforms.LinearSampler3D:
@@ -107,6 +107,12 @@ namespace KumaEngine.Rendering
 
     public class MaterialFile
     {
-        public Dictionary<string, KumaPipelineUniforms> Textures = new();
+        public Dictionary<string, MaterialResource> Textures = new();
+    }
+
+    public struct MaterialResource
+    {
+        public string File { get; set; }
+        public KumaPipelineUniforms Type { get; set; }
     }
 }

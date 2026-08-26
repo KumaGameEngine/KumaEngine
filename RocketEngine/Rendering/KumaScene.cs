@@ -36,9 +36,8 @@ namespace KumaEngine.Rendering
             var sorted = CurrentPointLights
                 .OrderByDescending(light =>
                 {
-                    float distSq = Vector3.DistanceSquared(CurrentCamera.Position, light.Position);
-                    distSq = Math.Max(distSq, 0.0001f);
-                    return (light.Intensity * light.Color.Length()) / distSq;
+                    float dist = Vector3.Distance(CurrentCamera.Position, light.Position);
+                    return light.Intensity / dist;
                 })
                 .Take(LightUploadScheme.MAX_POINT_LIGHTS)
                 .ToList();
