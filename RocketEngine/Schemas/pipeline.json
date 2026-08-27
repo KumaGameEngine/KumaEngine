@@ -114,9 +114,9 @@
         "CameraProjViewInverse",
         "CameraPos",
         "ObjectModelMatrix",
-        "LinearSamplerCube",
-        "LinearSampler2D",
-        "LinearSampler3D",
+        "SamplerCube",
+        "Sampler2D",
+        "Sampler3D",
         "Lights"
       ]
     },

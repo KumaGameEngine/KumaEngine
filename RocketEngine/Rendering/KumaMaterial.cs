@@ -54,9 +54,9 @@ namespace KumaEngine.Rendering
             {
                 switch (item.Value.Type)
                 {
-                    case KumaPipelineUniforms.LinearSamplerCube:
-                    case KumaPipelineUniforms.LinearSampler2D:
-                    case KumaPipelineUniforms.LinearSampler3D:
+                    case KumaPipelineUniforms.SamplerCube:
+                    case KumaPipelineUniforms.Sampler2D:
+                    case KumaPipelineUniforms.Sampler3D:
                         textureLayoutElementDescriptions.AddRange(
                             new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
                             new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment)
@@ -76,15 +76,28 @@ namespace KumaEngine.Rendering
             {
                 switch (item.Value.Type)
                 {
-                    case KumaPipelineUniforms.LinearSamplerCube:
+                    case KumaPipelineUniforms.SamplerCube:
                         bindableResources.Add(TextureExt.CubemapFromFile(device, factory, item.Value.File));
-                        bindableResources.Add(device.Aniso4xSampler);
                         break;
-                    case KumaPipelineUniforms.LinearSampler2D:
+                    case KumaPipelineUniforms.Sampler2D:
                         bindableResources.Add(TextureExt.ViewFromFile(device, factory, item.Value.File));
-                        bindableResources.Add(device.Aniso4xSampler);
                         break;
-                    case KumaPipelineUniforms.LinearSampler3D:
+                    case KumaPipelineUniforms.Sampler3D:
+                        break;
+                    default:
+                        break;
+                }
+
+                switch (item.Value.Mode)
+                {
+                    case KumaSamplerMode.Linear:
+                        bindableResources.Add(device.LinearSampler);
+                        break;
+                    case KumaSamplerMode.Point:
+                        bindableResources.Add(device.PointSampler);
+                        break;
+                    case KumaSamplerMode.Ansio:
+                        bindableResources.Add(device.Aniso4xSampler);
                         break;
                     default:
                         break;
@@ -114,5 +127,13 @@ namespace KumaEngine.Rendering
     {
         public string File { get; set; }
         public KumaPipelineUniforms Type { get; set; }
+        public KumaSamplerMode Mode { get; set; }
+    }
+
+    public enum KumaSamplerMode
+    {
+        Linear,
+        Point,
+        Ansio
     }
 }

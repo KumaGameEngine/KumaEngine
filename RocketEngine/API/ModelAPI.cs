@@ -35,9 +35,15 @@ namespace KumaEngine.API
 
         public static void PushModel(this Lua lua,Model mdl)
         {
-            var handle = Random.Shared.Next(int.MinValue, int.MaxValue);
+            var handle = 0;
 
-            ModelHandles.Add(handle, mdl);
+            if (ModelHandles.ContainsValue(mdl))
+                handle = ModelHandles.First(x => x.Value == mdl).Key;
+            else
+            {
+                handle = Random.Shared.Next(int.MinValue, int.MaxValue);
+                ModelHandles.Add(handle, mdl);
+            }
 
             lua.PushInteger(handle);
         }

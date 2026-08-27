@@ -16,7 +16,7 @@
       },
 
       "Samplers": {
-        "Image": "LinearSampler2D"
+        "Image": "Sampler2D"
       },
 
       "Output": "MainSwapchain"

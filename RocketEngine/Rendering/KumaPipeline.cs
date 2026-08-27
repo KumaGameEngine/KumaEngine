@@ -214,22 +214,22 @@ namespace KumaEngine.Rendering
                     void Dispatch() => ComputeList.Dispatch(groupsX, groupsY, groupsZ);
 
                     if (pass.definition.ComputePerObject) foreach (var gameObject in sortedObjects)
+                    {
+                        ComputeList.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
+
+                        uint currentBindSlot = 1;
+
+                        if (pass.definition.UseMaterial && gameObject.Material != null && gameObject.Material != lastBoundMaterial)
                         {
-                            ComputeList.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
-
-                            uint currentBindSlot = 1;
-
-                            if (pass.definition.UseMaterial && gameObject.Material != null && gameObject.Material != lastBoundMaterial)
+                            for (int i = 0; i < gameObject.Material.Resources.Count; i++)
                             {
-                                for (int i = 0; i < gameObject.Material.Resources.Count; i++)
-                                {
-                                    ComputeList.SetComputeResourceSet(currentBindSlot++, gameObject.Material.Resources[i]);
-                                }
-                                lastBoundMaterial = gameObject.Material;
+                                ComputeList.SetComputeResourceSet(currentBindSlot++, gameObject.Material.Resources[i]);
                             }
-
-                            Dispatch();
+                            lastBoundMaterial = gameObject.Material;
                         }
+
+                        Dispatch();
+                    }
                     else Dispatch();
                     continue;
                 }
@@ -435,9 +435,9 @@ namespace KumaEngine.Rendering
 
                 switch (enumValues)
                 {
-                    case KumaPipelineUniforms.LinearSamplerCube:
-                    case KumaPipelineUniforms.LinearSampler2D:
-                    case KumaPipelineUniforms.LinearSampler3D:
+                    case KumaPipelineUniforms.SamplerCube:
+                    case KumaPipelineUniforms.Sampler2D:
+                    case KumaPipelineUniforms.Sampler3D:
                         dynamicResourceLayoutElementDescriptions.AddRange(
                             new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment | ShaderStages.Compute),
                             new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment | ShaderStages.Compute)
@@ -687,9 +687,9 @@ namespace KumaEngine.Rendering
         CameraProjViewInverse,
         CameraPos,
         ObjectModelMatrix,
-        LinearSamplerCube,
-        LinearSampler2D,
-        LinearSampler3D,
+        SamplerCube,
+        Sampler2D,
+        Sampler3D,
         Lights,
         NULL
     }

@@ -119,7 +119,10 @@ namespace KumaEngine
 
             foreach (var item in PipelineAPI.PipelineHandles.Values)
             {
-                var go = KumaScene.CurrentGameObjects.Where(x => x.Pipeline == item).ToArray();
+                var go = KumaScene.CurrentGameObjects.Where(x => 
+                    !(x.Model is null && x.Pipeline is null) && 
+                    x.Pipeline == item
+                ).ToArray();
 
                 if (go.Length > 0) item.Draw(GraphicsList, ComputeList, go);
             }

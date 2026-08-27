@@ -27,11 +27,17 @@ namespace KumaEngine.API
             })
         ];
 
-        public static void PushMaterial(this Lua lua,KumaMaterial mdl)
+        public static void PushMaterial(this Lua lua,KumaMaterial mat)
         {
-            var handle = Random.Shared.Next(int.MinValue, int.MaxValue);
+            var handle = 0;
 
-            PipelineHandles.Add(handle, mdl);
+            if (PipelineHandles.ContainsValue(mat))
+                handle = PipelineHandles.First(x => x.Value == mat).Key;
+            else
+            {
+                handle = Random.Shared.Next(int.MinValue, int.MaxValue);
+                PipelineHandles.Add(handle, mat);
+            }
 
             lua.PushInteger(handle);
         }

@@ -15,28 +15,36 @@ namespace KumaEngine.API
             DefinitionFile.RegisterFunction("create", ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                var mdl = lua.ToModel(1);
-                var pipeline = lua.ToPipeline(2);
-                lua.PushGameObject(mdl, pipeline);
+                var name = lua.ToString(1);
+                var mdl = lua.ToModel(2);
+                var pipeline = lua.ToPipeline(3);
+                lua.PushGameObject(new GameObject(name, pipeline, mdl));
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("createEmpty", ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var name = lua.ToString(1);
+                lua.PushGameObject(new GameObject(name, null!, null!));
                 return 1;
             })
         ];
 
-        private static void DecomposeTransform(Matrix4x4 m,
+        public static void DecomposeTransform(Matrix4x4 m,
             out Vector3 position, out Vector3 eulerAngles, out Vector3 scale)
         {
             Matrix4x4.Decompose(m, out scale, out Quaternion rot, out position);
             eulerAngles = QuaternionToEuler(rot);
         }
 
-        private static Matrix4x4 ComposeTransform(Vector3 position, Vector3 eulerAngles, Vector3 scale)
+        public static Matrix4x4 ComposeTransform(Vector3 position, Vector3 eulerAngles, Vector3 scale)
         {
             return Matrix4x4.CreateScale(scale)
                  * Matrix4x4.CreateFromQuaternion(EulerToQuaternion(eulerAngles))
                  * Matrix4x4.CreateTranslation(position);
         }
 
-        private static Vector3 QuaternionToEuler(Quaternion q)
+        public static Vector3 QuaternionToEuler(Quaternion q)
         {
             float sinPitchCosPitch = 2f * (q.W * q.X + q.Y * q.Z);
             float cosPitchCosPitch = 1f - 2f * (q.X * q.X + q.Y * q.Y);
@@ -55,7 +63,7 @@ namespace KumaEngine.API
             return new Vector3(pitch * toDeg, yaw * toDeg, roll * toDeg);
         }
 
-        private static Quaternion EulerToQuaternion(Vector3 eulerDegrees)
+        public static Quaternion EulerToQuaternion(Vector3 eulerDegrees)
         {
             const float toRad = MathF.PI / 180f;
             return Quaternion.CreateFromYawPitchRoll(
@@ -65,11 +73,18 @@ namespace KumaEngine.API
             );
         }
 
-        public static void PushGameObject(this Lua lua, Model mdl, KumaPipeline pipeline)
+        public static void PushGameObject(this Lua lua, GameObject gameobject)
         {
-            var handle = Random.Shared.Next(int.MinValue, int.MaxValue);
-            GameObjectHandles.Add(handle, new GameObject(pipeline, mdl));
+            var handle = 0;
 
+            if (GameObjectHandles.ContainsValue(gameobject))
+                handle = GameObjectHandles.First(x => x.Value == gameobject).Key;
+            else
+            {
+                handle = Random.Shared.Next(int.MinValue, int.MaxValue);
+                GameObjectHandles.Add(handle, gameobject);
+            }
+            
             lua.NewTable();
 
             lua.PushInteger(handle);
@@ -100,8 +115,19 @@ namespace KumaEngine.API
                     case "scale": L.PushVec3(scl); return 1;
                     case "model": L.PushModel(GameObjectHandles[handle].Model); return 1;
                     case "material": L.PushMaterial(GameObjectHandles[handle].Material); return 1;
-                    default: L.PushNil(); return 1;
+                    case "name": L.PushString(GameObjectHandles[handle].Name); return 1;
+                    case "parent": L.PushGameObject(GameObjectHandles[handle].Parent); return 1;
                 }
+
+                var go = GameObjectHandles.Values.FirstOrDefault(x => 
+                    x.Parent == GameObjectHandles[handle] && 
+                    x.Name == key, 
+                    null!
+                );
+
+                L.PushGameObject(go);
+
+                return 1;
             });
             lua.SetField(-2, "__index");
 
@@ -120,6 +146,8 @@ namespace KumaEngine.API
                     case "scale": scl = L.ToVec3(3); break;
                     case "model": GameObjectHandles[handle].Model = L.ToModel(3); break;
                     case "material": GameObjectHandles[handle].Material = L.ToMaterial(3); break;
+                    case "name": GameObjectHandles[handle].Name = L.ToString(3); break;
+                    case "parent": GameObjectHandles[handle].Parent = L.ToGameObject(3); break;
                 }
 
                 GameObjectHandles[handle].Transform = ComposeTransform(pos, rot, scl);

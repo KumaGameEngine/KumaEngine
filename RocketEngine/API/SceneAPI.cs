@@ -75,7 +75,20 @@ namespace KumaEngine.API
                 var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToGameObject(1);
 
+                void iteradd(GameObject o)
+                {
+                    foreach (var item in GameObjectAPI.GameObjectHandles.Where(x=>
+                        x.Value.Parent == o && 
+                        !SceneHandles[handle].GameObjects.Contains(o)
+                    ))
+                    {
+                        SceneHandles[handle].GameObjects.Add(item.Value);
+                        iteradd(item.Value);
+                    }
+                }
+
                 SceneHandles[handle].GameObjects.Add(go);
+                iteradd(go);
 
                 return 1;
             });
@@ -118,10 +131,17 @@ namespace KumaEngine.API
                     case "camera":
                         L.PushCamera(SceneHandles[handle].Camera);
                         return 1;
-                    default:
-                        L.PushNil();
-                        return 1;
                 }
+
+                var go = SceneHandles[handle].GameObjects.FirstOrDefault(x =>
+                    x.Parent == null! &&
+                    x.Name == key,
+                    null!
+                );
+
+                L.PushGameObject(go);
+
+                return 1;
             });
             lua.SetField(-2, "__index");
 
