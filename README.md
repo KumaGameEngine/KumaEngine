@@ -29,5 +29,8 @@ dotnet publish
 
 the kumaCLI executable is in `./RocketCLI/bin/Release/net9.0`.
 
+## AI Stament
+The Kuma game engine is fully made by humans, and i would like for it to stay that way. All pull requets containing LLM generated code will be rejected.
+
 > [!WARNING]
-> the game engine is currently in a primitive state, it is usable but a lot of features are missing.
+> the game engine is currently in a primitive state, it is usable but a lot of features are missing. and the advertized performance boosts are not there.
