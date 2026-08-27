@@ -37,11 +37,28 @@ namespace KumaCLI
                     Console.WriteLine("  new   | create a new project");
                     break;
                 case "debug":
+                    if (args.Length > 1)
+                    {
+                        var dir = Path.GetFullPath(args[1]);
+                        if (!Directory.Exists(dir))
+                        {
+                            Console.WriteLine($"Directory '{dir}' does not exist");
+                            return;
+                        }
+
+                        Environment.CurrentDirectory = Path.GetFullPath(args[1]);
+                    }
+
                     if (!ProjectHelper.IsGameDirectory())
                     {
                         Console.WriteLine("Cannot debug in this directory");
                         return;
                     }
+
+                    ProjectHelper.CopyDirectory(
+                        Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!,"Data"),
+                        "Data",true
+                    );
 
                     SdlWindow window = new SdlWindow("KumaCLI debug");
                     Game instance = new Game(window);

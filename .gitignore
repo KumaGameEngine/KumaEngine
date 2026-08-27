@@ -365,3 +365,4 @@ FodyWeavers.xsd
 # Adrift
 AdriftGame/
 Resources/
+RocketCLI/Properties/launchSettings.json
