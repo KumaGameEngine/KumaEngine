@@ -56,19 +56,36 @@ namespace KumaEngine.Windowing
             };
         }
 
-        public void Run()
+        public void Run(GraphicsBackend backend)
         {
             GraphicsDeviceOptions options = new GraphicsDeviceOptions(
                 debug: false,
-                swapchainDepthFormat: PixelFormat.R16_UNorm,
+                swapchainDepthFormat: null,
                 syncToVerticalBlank: false,
                 resourceBindingModel: ResourceBindingModel.Improved,
                 preferDepthRangeZeroToOne: true,
-                preferStandardClipSpaceYDirection: true);
+                preferStandardClipSpaceYDirection: true
+            );
 #if DEBUG
             options.Debug = true;
 #endif
-            _gd = VeldridStartup.CreateGraphicsDevice(_window, options);
+
+            SwapchainDescription scDesc = new SwapchainDescription(
+                source: VeldridStartup.GetSwapchainSource(_window),
+                width: (uint)_window.Width,
+                height: (uint)_window.Height,
+                depthFormat: PixelFormat.R16_UNorm,
+                syncToVerticalBlank: false,
+                colorSrgb: true
+            );
+
+            _gd = backend switch 
+            {
+                GraphicsBackend.Vulkan => GraphicsDevice.CreateVulkan(options, scDesc),
+                GraphicsBackend.Metal => GraphicsDevice.CreateMetal(options, scDesc),
+                _ => GraphicsDevice.CreateD3D11(options, scDesc),
+            };
+
             _factory = new DisposeCollectorResourceFactory(_gd.ResourceFactory);
             GraphicsDeviceCreated?.Invoke(_gd, _factory, _gd.MainSwapchain);
 

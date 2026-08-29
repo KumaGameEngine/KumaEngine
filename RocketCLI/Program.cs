@@ -28,7 +28,10 @@ namespace KumaCLI
                 return;
             }
 
-            switch (args[0].ToLower())
+            var properties = args.Where(x=>x.StartsWith('-')).ToArray();
+            var arguments = args.Where(x=>!x.StartsWith('-')).ToArray();
+
+            switch (arguments[0].ToLower())
             {
                 case "help":
                     Console.WriteLine("Available commands:");
@@ -37,16 +40,16 @@ namespace KumaCLI
                     Console.WriteLine("  new   | create a new project");
                     break;
                 case "debug":
-                    if (args.Length > 1)
+                    if (arguments.Length > 1)
                     {
-                        var dir = Path.GetFullPath(args[1]);
+                        var dir = Path.GetFullPath(arguments[1]);
                         if (!Directory.Exists(dir))
                         {
                             Console.WriteLine($"Directory '{dir}' does not exist");
                             return;
                         }
 
-                        Environment.CurrentDirectory = Path.GetFullPath(args[1]);
+                        Environment.CurrentDirectory = Path.GetFullPath(arguments[1]);
                     }
 
                     if (!ProjectHelper.IsGameDirectory())
@@ -63,10 +66,14 @@ namespace KumaCLI
                     SdlWindow window = new SdlWindow("KumaCLI debug");
                     Game instance = new Game(window);
 
-                    window.Run();
+                    var backend = PropertiesManager.GetBackend(properties);
+
+                    Console.WriteLine("Using backend: " + backend);
+
+                    window.Run(backend);
                     break;
                 case "new":
-                    if (args.Length < 2)
+                    if (arguments.Length < 2)
                     {
                         Console.WriteLine("Invalid usage");
                         Console.WriteLine();
@@ -74,7 +81,7 @@ namespace KumaCLI
                         return;
                     }
 
-                    ProjectCreator.CreateProject(args[1]);
+                    ProjectCreator.CreateProject(arguments[1]);
                     break;
                 default:
                     Console.WriteLine("Invalid command");

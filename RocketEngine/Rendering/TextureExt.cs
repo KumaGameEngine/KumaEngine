@@ -21,7 +21,7 @@ namespace KumaEngine.Rendering
 
             return new(width,height);
         }
-        public static TextureView ViewFromFile(GraphicsDevice device, ResourceFactory factory, string file)
+        public static TextureView ViewFromFile(GraphicsDevice device, ResourceFactory factory, string file, PixelFormat format = PixelFormat.R8_G8_B8_A8_UNorm_SRgb)
         {
             var defpath = Path.Combine("Data", "Textures", file);
 
@@ -37,7 +37,7 @@ namespace KumaEngine.Rendering
                     width, height,
                     mipLevels: 1,
                     arrayLayers: 1,
-                    PixelFormat.R8_G8_B8_A8_UNorm,
+                    format,
                     TextureUsage.Sampled));
 
             Texture stagingTex = factory.CreateTexture(
@@ -45,7 +45,7 @@ namespace KumaEngine.Rendering
                     width, height,
                     mipLevels: 1,
                     arrayLayers: 1,
-                    PixelFormat.R8_G8_B8_A8_UNorm,
+                    format,
                     TextureUsage.Staging));
 
             unsafe
@@ -79,7 +79,7 @@ namespace KumaEngine.Rendering
         }
 
         public static TextureView CubemapFromFile(
-            GraphicsDevice device, ResourceFactory factory, string file)
+            GraphicsDevice device, ResourceFactory factory, string file, PixelFormat format = PixelFormat.R8_G8_B8_A8_UNorm_SRgb)
         {
             var path = Path.Combine("Data", "Textures", file);
 
@@ -156,12 +156,12 @@ namespace KumaEngine.Rendering
 
             Texture deviceTex = factory.CreateTexture(
                 TextureDescription.Texture2D(uFace, uFace, 1, arrayLayers: 6,
-                    PixelFormat.R8_G8_B8_A8_UNorm,
+                    format,
                     TextureUsage.Sampled | TextureUsage.Cubemap));
 
             Texture stagingTex = factory.CreateTexture(
                 TextureDescription.Texture2D(uFace, uFace, 1, arrayLayers: 6,
-                    PixelFormat.R8_G8_B8_A8_UNorm,
+                    format,
                     TextureUsage.Staging));
 
             byte[] facePixels = new byte[faceSize * faceSize * 4];

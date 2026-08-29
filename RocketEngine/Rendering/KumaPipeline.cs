@@ -1,4 +1,5 @@
-﻿using KumaEngine.API;
+﻿using Assimp;
+using KumaEngine.API;
 using KumaEngine.Rendering.VertexTypes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -66,9 +67,9 @@ namespace KumaEngine.Rendering
         public DeviceBuffer ModelBuffer;
         public Dictionary<string, KumaVertexElement> VertexDefinition { get; set; } = new();
 
-        static KumaSwapchain PrevSwapchain = null!;
-
         static bool GraphicsDispatchable = false;
+
+        public const ShaderStages STAGE_GLOBAL = ShaderStages.Vertex | ShaderStages.Fragment | ShaderStages.Compute;
 
         public KumaPipeline(ResourceFactory factory)
         {
@@ -116,8 +117,6 @@ namespace KumaEngine.Rendering
 
         public void Draw(CommandList list, Model model, KumaMaterial mat)
         {
-            PrevSwapchain = null!;
-
             foreach (var item in Passes)
             {
                 if (item.IsCompute)
@@ -144,11 +143,7 @@ namespace KumaEngine.Rendering
                     continue;
                 }
 
-                if (PrevSwapchain != item.swapchain)
-                {
-                    list.SetFramebuffer(item.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
-                    PrevSwapchain = item.swapchain ?? null!;
-                }
+                list.SetFramebuffer(item.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
 
                 list.SetPipeline(item.Pipeline);
                 list.SetGraphicsResourceSet(0, item.Resources);
@@ -165,8 +160,6 @@ namespace KumaEngine.Rendering
 
         public void Draw(CommandList GraphicsList, CommandList ComputeList, params GameObject[] obj)
         {
-            PrevSwapchain = null!;
-
             bool lastPassCompute = false;
 
             foreach (var pass in Passes)
@@ -234,11 +227,7 @@ namespace KumaEngine.Rendering
                     continue;
                 }
 
-                if (PrevSwapchain != pass.swapchain)
-                {
-                    GraphicsList.SetFramebuffer(pass.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
-                    PrevSwapchain = pass.swapchain ?? null!;
-                }
+                GraphicsList.SetFramebuffer(pass.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
 
                 GraphicsList.SetPipeline(pass.Pipeline);
                 GraphicsList.SetGraphicsResourceSet(0, pass.Resources);
@@ -383,14 +372,14 @@ namespace KumaEngine.Rendering
                     case KumaPipelineUniforms.Lights:
                     case KumaPipelineUniforms.CameraPos:
                         staticResourceLayoutElementDescriptions.Add(
-                            new ResourceLayoutElementDescription(item.Key, ResourceKind.UniformBuffer, ShaderStages.Vertex | ShaderStages.Fragment | ShaderStages.Compute)
+                            new ResourceLayoutElementDescription(item.Key, ResourceKind.UniformBuffer, KumaPipeline.STAGE_GLOBAL)
                         );
                         break;
                     case KumaPipelineUniforms.NULL:
                         if (SwapChains.Any(x => x.Value != null && x.Value.Attachments.ContainsKey(item.Value)))
                             staticResourceLayoutElementDescriptions.AddRange(
-                                new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment | ShaderStages.Compute),
-                                new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment | ShaderStages.Compute)
+                                new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, KumaPipeline.STAGE_GLOBAL),
+                                new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, KumaPipeline.STAGE_GLOBAL)
                             );
                         else
                         {
@@ -402,7 +391,7 @@ namespace KumaEngine.Rendering
                                     new ResourceLayoutElementDescription(
                                         item.Key,
                                         ResourceKind.StructuredBufferReadOnly,
-                                        ShaderStages.Vertex | ShaderStages.Fragment | ShaderStages.Compute)
+                                        KumaPipeline.STAGE_GLOBAL)
                                 );
 
                                 continue;
@@ -417,7 +406,8 @@ namespace KumaEngine.Rendering
                                 new ResourceLayoutElementDescription(
                                     item.Key,
                                     access ? ResourceKind.StructuredBufferReadWrite : ResourceKind.StructuredBufferReadOnly,
-                                    ShaderStages.Compute)
+                                    ShaderStages.Compute
+                                )
                             );
                         }
                         break;
@@ -439,8 +429,8 @@ namespace KumaEngine.Rendering
                     case KumaPipelineUniforms.Sampler2D:
                     case KumaPipelineUniforms.Sampler3D:
                         dynamicResourceLayoutElementDescriptions.AddRange(
-                            new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment | ShaderStages.Compute),
-                            new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment | ShaderStages.Compute)
+                            new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, KumaPipeline.STAGE_GLOBAL),
+                            new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, KumaPipeline.STAGE_GLOBAL)
                         );
                         break;
                     default:
@@ -451,22 +441,30 @@ namespace KumaEngine.Rendering
             ResourceLayoutDescription resourceLayoutDescription = new ResourceLayoutDescription(staticResourceLayoutElementDescriptions.ToArray());
             ResourceLayout sharedLayout = factory.CreateResourceLayout(resourceLayoutDescription);
 
-            ResourceLayoutDescription resourceLayoutDescription1 = new ResourceLayoutDescription(dynamicResourceLayoutElementDescriptions.ToArray());
-            ResourceLayout textureLayout = factory.CreateResourceLayout(resourceLayoutDescription1);
-
             if (!SwapChains.ContainsKey(result.Output))
                 SwapChains.Add(result.Output, new(factory, result.Output + ".json"));
 
+            List<ResourceLayout> layouts = [sharedLayout];
+
+            if (dynamicResourceLayoutElementDescriptions.Count > 0)
+            {
+                ResourceLayoutDescription resourceLayoutDescription1 = new ResourceLayoutDescription(dynamicResourceLayoutElementDescriptions.ToArray());
+                ResourceLayout textureLayout = factory.CreateResourceLayout(resourceLayoutDescription1);
+
+                layouts.Add(textureLayout);
+            }
+
             var ret = result.Type switch
             {
-                KumaShaderType.Graphics => GetGraphicsPass(factory, result, set, new[] { sharedLayout, textureLayout }, layoutElements),
-                KumaShaderType.Compute => GetComputePass(factory, result, set, new[] { sharedLayout, textureLayout }),
+                KumaShaderType.Graphics => GetGraphicsPass(factory, result, set, layouts.ToArray(), layoutElements),
+                KumaShaderType.Compute => GetComputePass(factory, result, set, layouts.ToArray()),
                 _ => throw new Exception("Invalid shader type in pipeline definition")
             };
 
             ret.definition = result;
 
-            ret.swapchain = SwapChains[result.Output];
+            if (result.Type != KumaShaderType.Compute)
+                ret.swapchain = SwapChains[result.Output];
 
             ret.Factory = factory;
             ret.SharedLayout = sharedLayout;
@@ -627,15 +625,15 @@ namespace KumaEngine.Rendering
             {
                 BlendState = BlendStateDescription.SingleAlphaBlend,
                 DepthStencilState = new DepthStencilStateDescription(
-                    depthTestEnabled: true,
-                    depthWriteEnabled: true,
-                    comparisonKind: ComparisonKind.LessEqual),
+                    depthTestEnabled: result.DepthTest,
+                    depthWriteEnabled: result.DepthWrite,
+                    comparisonKind: result.DepthComparison),
                 RasterizerState = new RasterizerStateDescription(
-                    cullMode: FaceCullMode.Back,
-                    fillMode: PolygonFillMode.Solid,
-                    frontFace: FrontFace.CounterClockwise,
-                    depthClipEnabled: true,
-                    scissorTestEnabled: false
+                    cullMode: result.CullMode,
+                    fillMode: result.FillMode,
+                    frontFace: result.FrontFace,
+                    depthClipEnabled: result.DepthClipEnabled,
+                    scissorTestEnabled: result.ScissorTestEnabled
                 ),
                 PrimitiveTopology = PrimitiveTopology.TriangleList,
                 ResourceLayouts = layouts,
@@ -731,8 +729,19 @@ namespace KumaEngine.Rendering
         public bool AutoGroups = false;
         public bool ComputePerObject = false;
         public bool UseMaterial = true;
+        public bool DepthTest = true;
+        public bool DepthWrite = true;
+        public ComparisonKind DepthComparison = ComparisonKind.LessEqual;
+        public FaceCullMode CullMode = FaceCullMode.Back;
+        public PolygonFillMode FillMode = PolygonFillMode.Solid;
+        public FrontFace FrontFace = FrontFace.CounterClockwise;
+        public bool DepthClipEnabled = true;
+        public bool ScissorTestEnabled = true;
 
-        public Dictionary<string, string> Uniforms = new();
-        public Dictionary<string, string> Samplers = new();
+        [JsonConverter(typeof(OrderedKeyValueConverter))]
+        public List<(string Key, string Value)> Uniforms = new();
+
+        [JsonConverter(typeof(OrderedKeyValueConverter))]
+        public List<(string Key, string Value)> Samplers = new();
     }
 }

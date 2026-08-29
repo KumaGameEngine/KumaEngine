@@ -1,6 +1,6 @@
 #version 450
 
-layout(set = 0, binding = 1) uniform Model
+layout(set = 0, binding = 0) uniform Model
 {
 	mat4 mdl;
 	mat3 normalMdl;

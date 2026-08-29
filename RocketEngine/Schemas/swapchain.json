@@ -52,6 +52,10 @@
           "type": "boolean",
           "default": true
         },
+        "BlitToScreen": {
+          "type": "boolean",
+          "default": false
+        },
         "Format": {
           "default": "R8_G8_B8_A8_UNorm",
           "$ref": "#/$defs/PixelFormat"

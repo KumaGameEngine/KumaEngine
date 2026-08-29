@@ -19,8 +19,10 @@ namespace KumaEngine.Rendering
         public Dictionary<string, TextureView> Attachments = new();
 
         public List<bool> ClearColorIDS = new();
+        public List<bool> BlitColorIDS = new();
 
         public bool ClearDepth = true;
+        public int BlitDepth = -1;
 
         List<Texture> _colorTextures = new();
         Texture _DepthTexture = null!;
@@ -49,6 +51,12 @@ namespace KumaEngine.Rendering
         public KumaSwapchain() 
         {
             SupportsResizing = false;
+        }
+
+        public KumaSwapchain(ResourceFactory factory, SwapchainFile file)
+        {
+            _result = file;
+            Resize(factory);
         }
 
         public KumaSwapchain(ResourceFactory factory, string definitionFile)
@@ -97,6 +105,7 @@ namespace KumaEngine.Rendering
                 _colorTextures.Add(colorTex);
 
                 ClearColorIDS.Add(item.Clear);
+                BlitColorIDS.Add(item.BlitToScreen);
 
                 Attachments.Add(item.Name, factory.CreateTextureView(colorTex));
             }
@@ -113,6 +122,9 @@ namespace KumaEngine.Rendering
                 _DepthTexture = factory.CreateTexture(ref depthDesc);
 
                 ClearDepth = _result.DepthAttachment.Clear;
+
+                if (_result.DepthAttachment.BlitToScreen)
+                    BlitDepth = Attachments.Count;
 
                 Attachments.Add(_result.DepthAttachment.Name, factory.CreateTextureView(_DepthTexture));
             }
@@ -139,5 +151,6 @@ namespace KumaEngine.Rendering
         public uint ArrayLayers = 1;
         public bool Clear = true;
         public PixelFormat Format = PixelFormat.R8_G8_B8_A8_UNorm;
+        public bool BlitToScreen = false;
     }
 }

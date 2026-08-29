@@ -20,8 +20,8 @@ namespace KumaEngine.Rendering
         public void AddTextureSampler(ResourceFactory factory,string name,TextureView view,Sampler sampler)
         {
             ResourceLayoutDescription resourceLayoutDescription1 = new ResourceLayoutDescription([
-                new ResourceLayoutElementDescription(name + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
-                new ResourceLayoutElementDescription(name + "Samp", ResourceKind.Sampler, ShaderStages.Fragment)
+                new ResourceLayoutElementDescription(name + "Tex", ResourceKind.TextureReadOnly, KumaPipeline.STAGE_GLOBAL),
+                new ResourceLayoutElementDescription(name + "Samp", ResourceKind.Sampler, KumaPipeline.STAGE_GLOBAL)
             ]);
             ResourceLayout textureLayout = factory.CreateResourceLayout(resourceLayoutDescription1);
 
@@ -58,8 +58,8 @@ namespace KumaEngine.Rendering
                     case KumaPipelineUniforms.Sampler2D:
                     case KumaPipelineUniforms.Sampler3D:
                         textureLayoutElementDescriptions.AddRange(
-                            new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
-                            new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, ShaderStages.Fragment)
+                            new ResourceLayoutElementDescription(item.Key + "Tex", ResourceKind.TextureReadOnly, KumaPipeline.STAGE_GLOBAL),
+                            new ResourceLayoutElementDescription(item.Key + "Samp", ResourceKind.Sampler, KumaPipeline.STAGE_GLOBAL)
                         );
                         break;
                     default:
@@ -77,10 +77,10 @@ namespace KumaEngine.Rendering
                 switch (item.Value.Type)
                 {
                     case KumaPipelineUniforms.SamplerCube:
-                        bindableResources.Add(TextureExt.CubemapFromFile(device, factory, item.Value.File));
+                        bindableResources.Add(TextureExt.CubemapFromFile(device, factory, item.Value.File, item.Value.Format));
                         break;
                     case KumaPipelineUniforms.Sampler2D:
-                        bindableResources.Add(TextureExt.ViewFromFile(device, factory, item.Value.File));
+                        bindableResources.Add(TextureExt.ViewFromFile(device, factory, item.Value.File, item.Value.Format));
                         break;
                     case KumaPipelineUniforms.Sampler3D:
                         break;
@@ -123,11 +123,12 @@ namespace KumaEngine.Rendering
         public Dictionary<string, MaterialResource> Textures = new();
     }
 
-    public struct MaterialResource
+    public class MaterialResource
     {
         public string File { get; set; }
         public KumaPipelineUniforms Type { get; set; }
-        public KumaSamplerMode Mode { get; set; }
+        public KumaSamplerMode Mode { get; set; } = KumaSamplerMode.Ansio;
+        public PixelFormat Format { get; set; } = PixelFormat.R8_G8_B8_A8_UNorm_SRgb;
     }
 
     public enum KumaSamplerMode

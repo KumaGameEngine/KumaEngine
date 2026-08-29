@@ -19,6 +19,9 @@ namespace KumaEngine
 
         KumaPipeline SkyboxPipeline;
         Model SkyboxModel;
+
+        Framebuffer scratchfb;
+
         public Game(ApplicationWindow window) : base(window) { }
 
         protected override void CreateResources(ResourceFactory factory)
@@ -26,10 +29,10 @@ namespace KumaEngine
             DefinitionFile.Game = this;
 
             Camera._cameraProjViewBuffer = factory.CreateBuffer(
-                new BufferDescription((uint)(Unsafe.SizeOf<Matrix4x4>() * 2), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+                new BufferDescription((uint)Unsafe.SizeOf<MatrixPair>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
             Camera._cameraProjViewInverseBuffer = factory.CreateBuffer(
-                new BufferDescription((uint)(Unsafe.SizeOf<Matrix4x4>() * 2), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+                new BufferDescription((uint)Unsafe.SizeOf<MatrixPair>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
             Camera._cameraPosBuffer = factory.CreateBuffer(
                 new BufferDescription((uint)Unsafe.SizeOf<CameraInfo>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
@@ -86,6 +89,13 @@ namespace KumaEngine
                 0, 1, 2,
                 2, 1, 3
             ]);
+
+            scratchfb = new KumaSwapchain(factory,new SwapchainFile()
+            {
+                ColorAttachments = [
+                    new()
+                ]
+            }).Framebuffer;
         }
 
         protected override void Draw(float deltaSeconds)
@@ -127,6 +137,24 @@ namespace KumaEngine
                 if (go.Length > 0) item.Draw(GraphicsList, ComputeList, go);
             }
 
+            //foreach (var item in KumaPass.SwapChains.Values)
+            //{
+            //    if (item == null) continue;
+
+            //    var ctarget = MainSwapchain.Framebuffer.ColorTargets.First().Target;
+
+            //    for (int i = 0; i < item.BlitColorIDS.Count; i++)
+            //        if (item.BlitColorIDS[i]) GraphicsList.CopyTexture(
+            //            item.Attachments.Values.ElementAt(i).Target,
+            //            ctarget
+            //        );
+
+            //    if (item.BlitDepth > -1) GraphicsList.CopyTexture(
+            //        item.Attachments.Values.ElementAt(item.BlitDepth).Target,
+            //        MainSwapchain.Framebuffer.DepthTarget?.Target
+            //    );
+            //}
+
             if (KumaScene.CurrentSkyboxMaterial != null)
                 SkyboxPipeline.Draw(GraphicsList, SkyboxModel, KumaScene.CurrentSkyboxMaterial);
 
@@ -137,16 +165,10 @@ namespace KumaEngine
             }
 
             ComputeList.End();
-
-            GraphicsDevice.SubmitCommands(ComputeList,ComputeFence);
-            GraphicsDevice.WaitForFence(ComputeFence, 5000000000);
-            GraphicsDevice.ResetFence(ComputeFence);
+            GraphicsDevice.SubmitCommands(ComputeList);
 
             GraphicsList.End();
-
-            GraphicsDevice.SubmitCommands(GraphicsList,GraphicsFence);
-            GraphicsDevice.WaitForFence(GraphicsFence, 5000000000);
-            GraphicsDevice.ResetFence(GraphicsFence);
+            GraphicsDevice.SubmitCommands(GraphicsList);
 
             GraphicsDevice.SwapBuffers(MainSwapchain);
         }

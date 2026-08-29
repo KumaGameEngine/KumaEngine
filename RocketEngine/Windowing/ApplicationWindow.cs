@@ -31,6 +31,6 @@ namespace KumaEngine.Windowing
         public Vector2 Size();
         public Vector2 MouseDelta();
 
-        void Run();
+        void Run(GraphicsBackend backend);
     }
 }

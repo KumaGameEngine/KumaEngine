@@ -156,5 +156,6 @@ namespace KumaEngine.Rendering
     {
         public Matrix4x4 First = first;
         public Matrix4x4 Second = second;
+        public Matrix4x4 Third = first * second;
     }
 }
