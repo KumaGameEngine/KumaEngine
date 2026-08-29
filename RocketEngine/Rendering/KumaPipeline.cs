@@ -69,12 +69,16 @@ namespace KumaEngine.Rendering
 
         static bool GraphicsDispatchable = false;
 
+        static Framebuffer _previousFB = null!;
+
         public const ShaderStages STAGE_GLOBAL = ShaderStages.Vertex | ShaderStages.Fragment | ShaderStages.Compute;
 
         public KumaPipeline(ResourceFactory factory)
         {
             ModelBuffer = factory.CreateBuffer(new(RocketModelScheme.Size, BufferUsage.UniformBuffer | BufferUsage.Dynamic));
         }
+
+        public static void ResetFramebuffer() => _previousFB = null!;
 
         public static KumaPipeline FromSet(ResourceFactory factory, string set)
         {
@@ -143,7 +147,11 @@ namespace KumaEngine.Rendering
                     continue;
                 }
 
-                list.SetFramebuffer(item.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
+                if (_previousFB != item.swapchain?.Framebuffer)
+                {
+                    list.SetFramebuffer(item.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
+                    _previousFB = item.swapchain?.Framebuffer!;
+                }
 
                 list.SetPipeline(item.Pipeline);
                 list.SetGraphicsResourceSet(0, item.Resources);
@@ -227,7 +235,11 @@ namespace KumaEngine.Rendering
                     continue;
                 }
 
-                GraphicsList.SetFramebuffer(pass.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
+                if (_previousFB != pass.swapchain?.Framebuffer)
+                {
+                    GraphicsList.SetFramebuffer(pass.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
+                    _previousFB = pass.swapchain?.Framebuffer!;
+                }
 
                 GraphicsList.SetPipeline(pass.Pipeline);
                 GraphicsList.SetGraphicsResourceSet(0, pass.Resources);

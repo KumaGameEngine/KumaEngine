@@ -109,6 +109,8 @@ namespace KumaEngine
             GraphicsList.Begin();
             ComputeList.Begin();
 
+            KumaPipeline.ResetFramebuffer();
+
             KumaScene.CurrentCamera.Update(GraphicsList);
 
             foreach (var item in KumaPass.SwapChains.Values)
