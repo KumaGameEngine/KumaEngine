@@ -78,17 +78,24 @@ namespace KumaEngine
             };
 
             SkyboxPipeline = KumaPipeline.FromSet(factory, "skybox");
-            SkyboxModel = Model.Create(GraphicsDevice, factory,
-            [
-                new SimpleVertex(new Vector3(-1f, -1f, 0f)),
-                new SimpleVertex(new Vector3( 1f, -1f, 0f)),
-                new SimpleVertex(new Vector3(-1f,  1f, 0f)),
-                new SimpleVertex(new Vector3( 1f,  1f, 0f)),
-            ],
-            [
-                0, 1, 2,
-                2, 1, 3
-            ]);
+            SkyboxModel = new Model()
+            {
+                Vertices = new() 
+                {
+                    Vertices = 
+                    [
+                        new Vector3(-1f, -1f, 0f),
+                        new Vector3( 1f, -1f, 0f),
+                        new Vector3(-1f,  1f, 0f),
+                        new Vector3( 1f,  1f, 0f),
+                    ]
+                },
+                Indicies = 
+                [
+                    0, 1, 2,
+                    2, 1, 3,
+                ]
+            };
 
             scratchfb = new KumaSwapchain(factory,new SwapchainFile()
             {

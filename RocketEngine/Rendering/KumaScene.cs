@@ -7,7 +7,8 @@ namespace KumaEngine.Rendering
     {
         public static List<GameObject> CurrentGameObjects = new();
         public static KumaMaterial CurrentSkyboxMaterial = null!;
-        public static List<KumaPointLight> CurrentPointLights = new(); 
+        public static List<KumaLight> CurrentLights = new();
+        public static KumaSun CurrentSun = KumaSun.Default;
 
         public static DeviceBuffer PointLightBuffer = null!;
 
@@ -15,7 +16,8 @@ namespace KumaEngine.Rendering
 
         public List<GameObject> GameObjects = new();
         public KumaMaterial SkyboxMat = null!;
-        public List<KumaPointLight> PointLights = new();
+        public List<KumaLight> Lights = new();
+        public KumaSun Sun = KumaSun.Default;
         public Camera Camera;
 
         public KumaScene(Camera cam)
@@ -33,7 +35,7 @@ namespace KumaEngine.Rendering
 
         public static unsafe void UploadLights(GraphicsDevice device)
         {
-            var sorted = CurrentPointLights
+            var sorted = CurrentLights
                 .OrderByDescending(light =>
                 {
                     float dist = Vector3.Distance(CurrentCamera.Position, light.Position);
@@ -45,7 +47,9 @@ namespace KumaEngine.Rendering
             LightUploadScheme scheme = new();
             scheme.PointLightCount = (uint)sorted.Count;
             for (int i = 0; i < sorted.Count; i++)
-                scheme.PointLights[i] = sorted[i].reference;
+                scheme.Lights[i] = sorted[i].reference;
+
+            scheme.Sun = CurrentSun.reference;
 
             device.UpdateBuffer(PointLightBuffer, 0, ref scheme);
         }
@@ -59,8 +63,10 @@ namespace KumaEngine.Rendering
             CurrentGameObjects.Clear();
             CurrentGameObjects.AddRange(scene.GameObjects);
 
-            CurrentPointLights.Clear();
-            CurrentPointLights.AddRange(scene.PointLights);
+            CurrentLights.Clear();
+            CurrentLights.AddRange(scene.Lights);
+
+            CurrentSun = scene.Sun;
 
             CurrentCamera = scene.Camera;
 

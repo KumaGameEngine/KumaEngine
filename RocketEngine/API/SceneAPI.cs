@@ -97,9 +97,9 @@ namespace KumaEngine.API
             lua.PushSafeCFunction(ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                var go = lua.ToPointLight(1);
+                var go = lua.ToLight(1);
 
-                SceneHandles[handle].PointLights.Add(go);
+                SceneHandles[handle].Lights.Add(go);
 
                 return 1;
             });
@@ -131,6 +131,9 @@ namespace KumaEngine.API
                     case "camera":
                         L.PushCamera(SceneHandles[handle].Camera);
                         return 1;
+                    case "sun":
+                        L.PushSun(SceneHandles[handle].Sun);
+                        return 1;
                 }
 
                 var go = SceneHandles[handle].GameObjects.FirstOrDefault(x =>
@@ -144,6 +147,20 @@ namespace KumaEngine.API
                 return 1;
             });
             lua.SetField(-2, "__index");
+
+            lua.PushSafeCFunction(ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                string key = L.ToString(2);
+                switch (key)
+                {
+                    case "sun":
+                        SceneHandles[handle].Sun = L.ToSun(3);
+                        break;
+                }
+                return 0;
+            });
+            lua.SetField(-2, "__newindex");
 
             lua.SetMetaTable(-2);
         }

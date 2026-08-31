@@ -140,6 +140,18 @@ namespace KumaEngine.Rendering
             Position = _position,
             ScreenSize = new(_windowWidth,_windowHeight)
         };
+
+        public static Vector3 EulerToDirection(Vector3 vec)
+        {
+            float pitch = vec.X * MathF.PI / 180f;
+            float yaw = vec.Y * MathF.PI / 180f;
+            float roll = vec.Z * MathF.PI / 180f;
+
+            Quaternion q = Quaternion.CreateFromYawPitchRoll(yaw, pitch, roll);
+            Vector3 direction = Vector3.Transform(-Vector3.UnitZ, q);
+
+            return Vector3.Normalize(direction);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential,Pack = 1)]

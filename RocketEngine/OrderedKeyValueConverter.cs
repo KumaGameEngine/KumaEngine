@@ -1,53 +1,56 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.ComponentModel;
 
 namespace KumaEngine
 {
-    using System;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-
-    public class OrderedKeyValueConverter : JsonConverter
+    public class OrderedKeyValueConverter<TKey, TValue> : JsonConverter
     {
         public override bool CanConvert(Type objectType) =>
-            objectType == typeof(List<(string Key, string Value)>);
+            objectType == typeof(List<(TKey Key, TValue Value)>);
 
         public override object ReadJson(
             JsonReader reader,
             Type objectType,
             object existingValue,
-            JsonSerializer serializer
-        )
+            JsonSerializer serializer)
         {
-            var result = new List<(string Key, string Value)>();
-
+            var result = new List<(TKey Key, TValue Value)>();
             if (reader.TokenType == JsonToken.Null)
                 return result;
 
             var obj = JObject.Load(reader);
-
             foreach (var prop in obj.Properties())
-                result.Add((prop.Name, prop.Value.ToString()));
-
+            {
+                TKey key = ConvertKey(prop.Name);
+                TValue value = prop.Value.ToObject<TValue>(serializer);
+                result.Add((key, value));
+            }
             return result;
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             writer.WriteStartObject();
-
-            foreach (var (key, val) in (List<(string Key, string Value)>)value)
+            foreach (var (key, val) in (List<(TKey Key, TValue Value)>)value)
             {
-                writer.WritePropertyName(key);
-                writer.WriteValue(val);
+                writer.WritePropertyName(Convert.ToString(key));
+                serializer.Serialize(writer, val);
             }
-
             writer.WriteEndObject();
+        }
+
+        private static TKey ConvertKey(string propertyName)
+        {
+            if (typeof(TKey) == typeof(string))
+                return (TKey)(object)propertyName;
+
+            var converter = TypeDescriptor.GetConverter(typeof(TKey));
+            if (converter.CanConvertFrom(typeof(string)))
+                return (TKey)converter.ConvertFromInvariantString(propertyName)!;
+
+            return (TKey)Convert.ChangeType(propertyName, typeof(TKey));
         }
     }
 }

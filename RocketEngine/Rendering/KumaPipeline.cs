@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -65,7 +66,7 @@ namespace KumaEngine.Rendering
     {
         public List<KumaPass> Passes = new();
         public DeviceBuffer ModelBuffer;
-        public Dictionary<string, KumaVertexElement> VertexDefinition { get; set; } = new();
+        public List<(string Key, KumaVertexElement Value)> VertexDefinition { get; set; } = new();
 
         static bool GraphicsDispatchable = false;
 
@@ -121,6 +122,12 @@ namespace KumaEngine.Rendering
 
         public void Draw(CommandList list, Model model, KumaMaterial mat)
         {
+            var mdl = model.GetCompiledVerticies(
+                DefinitionFile.Game.GraphicsDevice,
+                DefinitionFile.Game.GraphicsDevice.ResourceFactory,
+                this
+            );
+
             foreach (var item in Passes)
             {
                 if (item.IsCompute)
@@ -159,10 +166,10 @@ namespace KumaEngine.Rendering
                 if (item.definition.UseMaterial && mat != null)
                     for (int i = 0; i < mat.Resources.Count; i++) list.SetGraphicsResourceSet((uint)i + 1, mat.Resources[i]);
 
-                list.SetVertexBuffer(0, model.VertexBuffer);
+                list.SetVertexBuffer(0, mdl);
                 list.SetIndexBuffer(model.IndexBuffer, IndexFormat.UInt32);
 
-                list.DrawIndexed(model.IndexCount);
+                list.DrawIndexed((uint)model.Indicies.Count);
             }
         }
 
@@ -248,8 +255,8 @@ namespace KumaEngine.Rendering
                 DeviceBuffer lastBoundVertexBuffer = null!;
 
                 var sortedGraphicsObjects = obj
-                    .OrderBy(x => x.Material?.GetHashCode() ?? 0)
-                    .ThenBy(x => x.Model.VertexBuffer.GetHashCode());
+                    .OrderBy(x => x.Material?.MaterialID ?? Guid.Empty)
+                    .ThenBy(x => x.Model.ModelID);
 
                 foreach (var gameObject in sortedGraphicsObjects)
                 {
@@ -265,14 +272,21 @@ namespace KumaEngine.Rendering
                     }
 
                     var model = gameObject.Model;
-                    if (model.VertexBuffer != lastBoundVertexBuffer)
+
+                    var mdl = model.GetCompiledVerticies(
+                        DefinitionFile.Game.GraphicsDevice,
+                        DefinitionFile.Game.GraphicsDevice.ResourceFactory,
+                        this
+                    );
+
+                    if (mdl != lastBoundVertexBuffer)
                     {
-                        GraphicsList.SetVertexBuffer(0, model.VertexBuffer);
+                        GraphicsList.SetVertexBuffer(0, mdl);
                         GraphicsList.SetIndexBuffer(model.IndexBuffer, IndexFormat.UInt32);
-                        lastBoundVertexBuffer = model.VertexBuffer;
+                        lastBoundVertexBuffer = mdl;
                     }
 
-                    GraphicsList.DrawIndexed(model.IndexCount);
+                    GraphicsList.DrawIndexed((uint)model.Indicies.Count);
                 }
 
                 GraphicsDispatchable = true;
@@ -722,7 +736,9 @@ namespace KumaEngine.Rendering
     public class PipelineFile
     {
         public List<PassFile> Passes = new();
-        public Dictionary<string, KumaVertexElement> VertexDefinition = new();
+
+        [JsonConverter(typeof(OrderedKeyValueConverter<string, KumaVertexElement>))]
+        public List<(string Key, KumaVertexElement Value)> VertexDefinition = new();
     }
 
     public class PassFile
@@ -750,10 +766,10 @@ namespace KumaEngine.Rendering
         public bool DepthClipEnabled = true;
         public bool ScissorTestEnabled = true;
 
-        [JsonConverter(typeof(OrderedKeyValueConverter))]
+        [JsonConverter(typeof(OrderedKeyValueConverter<string,string>))]
         public List<(string Key, string Value)> Uniforms = new();
 
-        [JsonConverter(typeof(OrderedKeyValueConverter))]
+        [JsonConverter(typeof(OrderedKeyValueConverter<string, string>))]
         public List<(string Key, string Value)> Samplers = new();
     }
 }

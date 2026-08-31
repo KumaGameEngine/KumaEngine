@@ -15,6 +15,7 @@ namespace KumaEngine.Rendering
 {
     public class KumaMaterial : IDisposable
     {
+        public Guid MaterialID { get; } = new();
         public List<ResourceSet> Resources { get; set; } = new();
 
         public void AddTextureSampler(ResourceFactory factory,string name,TextureView view,Sampler sampler)

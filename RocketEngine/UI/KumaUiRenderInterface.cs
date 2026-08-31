@@ -19,8 +19,8 @@ namespace KumaEngine.UI
         Dictionary<nint, KumaMaterial> UITextures = new();
         Dictionary<nint, Model> Geometry = new();
 
-        public uint GetColor(ColorB color) =>
-            color.Blue | ((uint)color.Green << 8) | ((uint)color.Red << 16) | ((uint)color.Alpha << 24);
+        public Vector4 GetColor(ColorB color) =>
+            new(color.Red / 255f, color.Green / 255f, color.Blue / 255f, color.Alpha / 255f);
 
         public override unsafe nint CompileGeometry(Vertex* vertices, int vertexCount, int* indices, int indexCount)
         {
@@ -31,14 +31,27 @@ namespace KumaEngine.UI
 
             List<ColorUVVertex> vtx = new();
 
-            foreach (var item in rvtx)
-                vtx.Add(new(
-                    new(item.Position.X, item.Position.Y,0),
-                    new(item.TextureCoordinates.X, item.TextureCoordinates.Y),
-                    GetColor(item.Colour)
-                ));
+            List<Vector3> positions = new();
+            List<Vector3> UVs = new();
+            List<Vector4> Colors = new();
 
-            var mdl = Model.Create(g.GraphicsDevice,g.ResourceFactory,vtx.ToArray(),idx.ToArray());
+            foreach (var item in rvtx)
+            {
+                positions.Add(new(item.Position.X, item.Position.Y, 0));
+                UVs.Add(new(item.TextureCoordinates.X, item.TextureCoordinates.Y, 0));
+                Colors.Add(GetColor(item.Colour));
+            }
+
+            var mdl = new Model()
+            {
+                Vertices = new()
+                {
+                    Vertices = positions,
+                    UVWLayers = [UVs],
+                    ColorLayers = [Colors]
+                },
+                Indicies = idx.ToArray().ToList()
+            };
 
             Geometry.Add(handle,mdl);
 
