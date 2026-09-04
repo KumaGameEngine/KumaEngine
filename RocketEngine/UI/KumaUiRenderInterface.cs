@@ -50,7 +50,7 @@ namespace KumaEngine.UI
                     UVWLayers = [UVs],
                     ColorLayers = [Colors]
                 },
-                Indicies = idx.ToArray().ToList()
+                Indices = idx.ToArray().ToList()
             };
 
             Geometry.Add(handle,mdl);

@@ -17,7 +17,7 @@ namespace KumaEngine.Rendering
         public DeviceBuffer IndexBuffer { get; private set; }
 
         public VertexDescriptionSet Vertices { get; set; } = new();
-        public List<uint> Indicies { get; set; } = new();
+        public List<uint> Indices { get; set; } = new();
 
         Dictionary<KumaPipeline, DeviceBuffer> _pipelineVertexCache = new();
 
@@ -31,17 +31,17 @@ namespace KumaEngine.Rendering
 
         public DeviceBuffer GetCompiledVerticies(GraphicsDevice gd, ResourceFactory factory, KumaPipeline pipeline)
         {
-            if (IndexBuffer == null || Indicies.Count * sizeof(uint) != IndexBuffer!.SizeInBytes)
+            if (IndexBuffer == null || Indices.Count * sizeof(uint) != IndexBuffer!.SizeInBytes)
             {
                 IndexBuffer?.Dispose();
                 IndexBuffer = factory.CreateBuffer(
                     new BufferDescription(
-                        (uint)Indicies.Count * sizeof(uint), 
+                        (uint)Indices.Count * sizeof(uint), 
                         BufferUsage.IndexBuffer
                     )
                 );
 
-                gd.UpdateBuffer(IndexBuffer, 0, Indicies.ToArray());
+                gd.UpdateBuffer(IndexBuffer, 0, Indices.ToArray());
 
                 Invalidate();
             }
@@ -146,7 +146,7 @@ namespace KumaEngine.Rendering
                     UVWLayers = item.TextureCoordinateChannels.ToList(),
                 };
 
-                mdl.Indicies = item.GetUnsignedIndices().ToList();
+                mdl.Indices = item.GetUnsignedIndices().ToList();
 
                 Models.Add(mdl);
             }

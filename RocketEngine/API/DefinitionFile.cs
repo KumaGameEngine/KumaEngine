@@ -25,6 +25,7 @@ namespace KumaEngine.API
             {"input",InputAPI.Register},
             {"game",GameAPI.Register},
             {"vector3",Vector3API.Register},
+            {"vector4",Vector4API.Register},
             {"light",LightAPI.Register},
             {"material",MaterialAPI.Register},
             {"ui",UIAPI.Register},

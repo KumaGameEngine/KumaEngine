@@ -90,7 +90,7 @@ namespace KumaEngine
                         new Vector3( 1f,  1f, 0f),
                     ]
                 },
-                Indicies = 
+                Indices = 
                 [
                     0, 1, 2,
                     2, 1, 3,

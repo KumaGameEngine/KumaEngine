@@ -169,7 +169,7 @@ namespace KumaEngine.Rendering
                 list.SetVertexBuffer(0, mdl);
                 list.SetIndexBuffer(model.IndexBuffer, IndexFormat.UInt32);
 
-                list.DrawIndexed((uint)model.Indicies.Count);
+                list.DrawIndexed((uint)model.Indices.Count);
             }
         }
 
@@ -286,7 +286,7 @@ namespace KumaEngine.Rendering
                         lastBoundVertexBuffer = mdl;
                     }
 
-                    GraphicsList.DrawIndexed((uint)model.Indicies.Count);
+                    GraphicsList.DrawIndexed((uint)model.Indices.Count);
                 }
 
                 GraphicsDispatchable = true;
