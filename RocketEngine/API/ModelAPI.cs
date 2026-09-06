@@ -31,7 +31,10 @@ namespace KumaEngine.API
             DefinitionFile.RegisterFunction("new",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                lua.PushModel(new());
+
+                Model mdl = new();
+
+                lua.PushModel(mdl);
                 return 1;
             })
         ];

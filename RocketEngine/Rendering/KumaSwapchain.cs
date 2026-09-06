@@ -66,7 +66,7 @@ namespace KumaEngine.Rendering
                 Converters = [new StringEnumConverter()]
             };
 
-            var defpath = Path.Combine("Data", "Swapchains", definitionFile);
+            var defpath = AssetRetriver.FetchAssetPath(AssetKind.Swapchains, definitionFile);
 
             if (!File.Exists(defpath)) throw new Exception("Could not find swapchain definition file");
 

@@ -88,7 +88,7 @@ namespace KumaEngine.Rendering
                 Converters = [new StringEnumConverter()]
             };
 
-            var defpath = Path.Combine("Data", "Shaders", set, "pipeline.json");
+            var defpath = AssetRetriver.FetchAssetPath(AssetKind.Shaders, Path.Combine(set, "pipeline.json"));
 
             if (!File.Exists(defpath)) throw new Exception("Could not find pipeline definition file");
 

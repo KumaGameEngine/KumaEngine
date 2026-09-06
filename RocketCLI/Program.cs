@@ -58,10 +58,8 @@ namespace KumaCLI
                         return;
                     }
 
-                    ProjectHelper.CopyDirectory(
-                        Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!,"Data"),
-                        "Data",true
-                    );
+                    AssetRetriver.AddAssetSource(Environment.CurrentDirectory);
+                    AssetRetriver.AddAssetSource(Path.GetDirectoryName(Environment.ProcessPath)!);
 
                     SdlWindow window = new SdlWindow("KumaCLI debug");
                     Game instance = new Game(window);

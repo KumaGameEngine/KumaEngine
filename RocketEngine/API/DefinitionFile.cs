@@ -55,7 +55,7 @@ namespace KumaEngine.API
             lua.SetField(-2, "engine");
             lua.Pop(2);
 
-            if (lua.DoFile(Path.Combine("Data", "Scripts", "main.lua")))
+            if (lua.DoFile(AssetRetriver.FetchAssetPath(AssetKind.Scripts,"main.lua")))
             {
                 string errorMsg = lua.ToString(-1);
                 Console.WriteLine($"Detected a Lua exception: {errorMsg}");

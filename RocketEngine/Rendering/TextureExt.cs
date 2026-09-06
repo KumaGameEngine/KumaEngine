@@ -10,7 +10,7 @@ namespace KumaEngine.Rendering
     {
         public static Vector2 GetSize(string file)
         {
-            var defpath = Path.Combine("Data", "Textures", file);
+            var defpath = AssetRetriver.FetchAssetPath(AssetKind.Textures, file);
 
             ImageResult image;
             using (var stream = File.OpenRead(defpath))
@@ -23,7 +23,7 @@ namespace KumaEngine.Rendering
         }
         public static TextureView ViewFromFile(GraphicsDevice device, ResourceFactory factory, string file, PixelFormat format = PixelFormat.R8_G8_B8_A8_UNorm_SRgb)
         {
-            var defpath = Path.Combine("Data", "Textures", file);
+            var defpath = AssetRetriver.FetchAssetPath(AssetKind.Textures, file);
 
             ImageResult image;
             using (var stream = File.OpenRead(defpath))
@@ -81,7 +81,7 @@ namespace KumaEngine.Rendering
         public static TextureView CubemapFromFile(
             GraphicsDevice device, ResourceFactory factory, string file, PixelFormat format = PixelFormat.R8_G8_B8_A8_UNorm_SRgb)
         {
-            var path = Path.Combine("Data", "Textures", file);
+            var path = AssetRetriver.FetchAssetPath(AssetKind.Textures, file);
 
             ImageResult image;
             using (var stream = File.OpenRead(path))

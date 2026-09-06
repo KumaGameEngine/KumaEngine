@@ -21,6 +21,19 @@ namespace KumaEngine.Rendering
 
         Dictionary<KumaPipeline, DeviceBuffer> _pipelineVertexCache = new();
 
+        public Model()
+        {
+            IndexBuffer = null!;
+            Vertices = new() 
+            {
+                UVWLayers = [],
+                Tangents = [],
+                ColorLayers = [],
+                Normals = [],
+                Vertices = []
+            };
+        }
+
         public void Invalidate()
         {
             foreach (var item in _pipelineVertexCache)
@@ -120,7 +133,7 @@ namespace KumaEngine.Rendering
         {
             var ctx = new AssimpContext();
 
-            var p = Path.Combine("Data", "Models",model);
+            var p = AssetRetriver.FetchAssetPath(AssetKind.Models, model);
 
             if (!File.Exists(p)) throw new Exception("Invalid model file");
 
@@ -220,7 +233,9 @@ namespace KumaEngine.Rendering
 
         public byte[] GetBytes(uint vertex)
         {
-            Span<float> floats = stackalloc float[] { Points[(int)vertex].X, Points[(int)vertex].Y, Points[(int)vertex].Z };
+            Vector3 point = vertex >= Points.Count ? Vector3.Zero : Points[(int)vertex];
+
+            Span<float> floats = stackalloc float[] { point.X, point.Y, point.Z };
             Span<byte> bytes = MemoryMarshal.AsBytes(floats);
 
             return bytes.ToArray();
@@ -234,7 +249,9 @@ namespace KumaEngine.Rendering
 
         public byte[] GetBytes(uint vertex)
         {
-            Span<float> floats = stackalloc float[] { Points[(int)vertex].X, Points[(int)vertex].Y};
+            Vector3 point = vertex >= Points.Count ? Vector3.Zero : Points[(int)vertex];
+
+            Span<float> floats = stackalloc float[] { point.X, point.Y};
             Span<byte> bytes = MemoryMarshal.AsBytes(floats);
 
             return bytes.ToArray();
@@ -248,9 +265,9 @@ namespace KumaEngine.Rendering
 
         public byte[] GetBytes(uint vertex)
         {
-            if (vertex >= Points.Count) return MemoryMarshal.AsBytes(stackalloc float[] {1,1,1,1}).ToArray();
+            Vector4 point = vertex >= Points.Count ? Vector4.One : Points[(int)vertex];
 
-            Span<float> floats = stackalloc float[] { Points[(int)vertex].X, Points[(int)vertex].Y, Points[(int)vertex].Z, Points[(int)vertex].W };
+            Span<float> floats = stackalloc float[] { point.X, point.Y, point.Z, point.W };
             Span<byte> bytes = MemoryMarshal.AsBytes(floats);
 
             return bytes.ToArray();
