@@ -120,7 +120,7 @@ namespace KumaEngine.Rendering
         {
             Vector3 lookDir = GetLookDir();
 
-            Quaternion lookRotation = Quaternion.CreateFromYawPitchRoll(_rotation.X, _rotation.Y, _rotation.Z);
+            Quaternion lookRotation = Quaternion.CreateFromYawPitchRoll(_rotation.Y, _rotation.X, _rotation.Z);
             Vector3 up = Vector3.Transform(Vector3.UnitY, lookRotation);
 
             _lookDirection = lookDir;
@@ -130,7 +130,7 @@ namespace KumaEngine.Rendering
 
         private Vector3 GetLookDir()
         {
-            Quaternion lookRotation = Quaternion.CreateFromYawPitchRoll(_rotation.X, _rotation.Y, _rotation.Z);
+            Quaternion lookRotation = Quaternion.CreateFromYawPitchRoll(_rotation.Y, _rotation.X, _rotation.Z);
             Vector3 lookDir = Vector3.Transform(-Vector3.UnitZ, lookRotation);
             return lookDir;
         }

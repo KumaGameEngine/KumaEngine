@@ -22,7 +22,7 @@ namespace KumaEngine.Rendering
         Matrix4x4 _LTransform = Matrix4x4.Identity;
         Matrix4x4 _ATransform = Matrix4x4.Identity;
 
-        Vector3 _Pos, _Rot, _Size;
+        Vector3 _Pos, _Rot, _Size = Vector3.One;
 
         public string Name;
 
@@ -36,8 +36,8 @@ namespace KumaEngine.Rendering
         {
             Transform = Matrix4x4.CreateScale(_Size)
                  * Matrix4x4.CreateFromYawPitchRoll(
-                     _Rot.X * EULER_TO_RAD, 
                      _Rot.Y * EULER_TO_RAD, 
+                     _Rot.X * EULER_TO_RAD, 
                      _Rot.Z * EULER_TO_RAD
                  ) * Matrix4x4.CreateTranslation(_Pos);
         }
