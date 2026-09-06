@@ -10,6 +10,8 @@ namespace KumaEngine.Rendering
 {
     public class GameObject
     {
+        const float EULER_TO_RAD = MathF.PI / 180f;
+
         public KumaPipeline Pipeline = null!;
         public Model Model = null!;
         public KumaMaterial Material = null!;
@@ -20,8 +22,25 @@ namespace KumaEngine.Rendering
         Matrix4x4 _LTransform = Matrix4x4.Identity;
         Matrix4x4 _ATransform = Matrix4x4.Identity;
 
+        Vector3 _Pos, _Rot, _Size;
+
         public string Name;
-        public Matrix4x4 Transform { get => GetTransform(); set => SetTransform(value); }
+
+        public Vector3 Position { get => _Pos; set { _Pos = value; UpdateTransform(); } }
+        public Vector3 Rotation { get => _Rot; set { _Rot = value; UpdateTransform(); } }
+        public Vector3 Size { get => _Size; set { _Size = value; UpdateTransform(); } }
+
+        public Matrix4x4 Transform { get => GetTransform(); private set => SetTransform(value); }
+
+        void UpdateTransform()
+        {
+            Transform = Matrix4x4.CreateScale(_Size)
+                 * Matrix4x4.CreateFromYawPitchRoll(
+                     _Rot.X * EULER_TO_RAD, 
+                     _Rot.Y * EULER_TO_RAD, 
+                     _Rot.Z * EULER_TO_RAD
+                 ) * Matrix4x4.CreateTranslation(_Pos);
+        }
 
         void SetTransform(Matrix4x4 value)
         {

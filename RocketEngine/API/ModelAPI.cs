@@ -51,6 +51,8 @@ namespace KumaEngine.API
                 ModelHandles.Add(handle, mdl);
             }
 
+            var model = ModelHandles[handle];
+
             lua.NewTable();
 
             lua.PushInteger(handle);
@@ -64,26 +66,26 @@ namespace KumaEngine.API
             });
             lua.SetField(-2, "invalidate");
 
-            lua.PushNumList(ModelHandles[handle].Indices);
+            lua.PushNumList(model.Indices);
             lua.SetField(-2, "indices");
 
             {
                 lua.NewTable();
 
-                lua.PushVector3List(ModelHandles[handle].Vertices.Vertices);
+                lua.PushVector3List(model.Vertices.Vertices);
                 lua.SetField(-2, "positions");
 
-                lua.PushVector3List(ModelHandles[handle].Vertices.Normals);
+                lua.PushVector3List(model.Vertices.Normals);
                 lua.SetField(-2, "normals");
 
-                lua.PushVector3List(ModelHandles[handle].Vertices.Tangents);
+                lua.PushVector3List(model.Vertices.Tangents);
                 lua.SetField(-2, "tangents");
 
                 lua.PushCFunction(ilua =>
                 {
                     var L = Lua.FromIntPtr(ilua);
                     int key = (int)L.ToInteger(1);
-                    L.PushVector3List(ModelHandles[handle].Vertices.UVWLayers[key]);
+                    L.PushVector3List(model.Vertices.UVWLayers[key]);
                     return 1;
                 });
                 lua.SetField(-2, "getUVWLayer");
@@ -113,10 +115,10 @@ namespace KumaEngine.API
                 });
                 lua.SetField(-2, "addColorLayer");
 
-                lua.PushInteger(ModelHandles[handle].Vertices.UVWLayers.Count);
+                lua.PushInteger(model.Vertices.UVWLayers.Count);
                 lua.SetField(-2, "uvwLayerCount");
 
-                lua.PushInteger(ModelHandles[handle].Vertices.ColorLayers.Count);
+                lua.PushInteger(model.Vertices.ColorLayers.Count);
                 lua.SetField(-2, "colorLayerCount");
 
                 lua.PushCFunction(ilua =>
@@ -153,10 +155,10 @@ namespace KumaEngine.API
             }
             lua.SetField(-2, "vertices");
 
-            lua.PushInteger(ModelHandles[handle].Vertices.Vertices.Count);
+            lua.PushInteger(model.Vertices.Vertices.Count);
             lua.SetField(-2, "vertexCount");
 
-            lua.PushInteger(ModelHandles[handle].Indices.Count);
+            lua.PushInteger(model.Indices.Count);
             lua.SetField(-2, "indexCount");
 
             lua.PushCFunction(ilua =>
@@ -166,9 +168,11 @@ namespace KumaEngine.API
                 Vector3 normal = L.ToVec3(2);
                 Vector3 tangent = L.ToVec3(3);
 
-                ModelHandles[handle].Vertices.Vertices.Add(pos);
-                ModelHandles[handle].Vertices.Normals.Add(normal);
-                ModelHandles[handle].Vertices.Tangents.Add(tangent);
+                var mdl = ModelHandles[handle];
+
+                mdl.Vertices.Vertices.Add(pos);
+                mdl.Vertices.Normals.Add(normal);
+                mdl.Vertices.Tangents.Add(tangent);
                 return 1;
             });
             lua.SetField(-2, "addVertex");
