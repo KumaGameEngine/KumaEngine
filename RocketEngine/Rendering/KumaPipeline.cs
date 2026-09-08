@@ -139,14 +139,16 @@ namespace KumaEngine.Rendering
                     list.SetPipeline(item.Pipeline);
                     list.SetComputeResourceSet(0, item.Resources);
 
-                    uint currentBindSlot = 1;
-
                     if (mat != null)
                     {
-                        for (int i = 0; i < mat.Resources.Count; i++)
-                        {
-                            list.SetComputeResourceSet(currentBindSlot++, mat.Resources[i]);
-                        }
+                        var resources = mat.GetCompiledMaterial(
+                            DefinitionFile.Game.GraphicsDevice, 
+                            DefinitionFile.Game.ResourceFactory,
+                            item
+                        );
+
+                        for (int i = 0; i < resources.Count; i++)
+                            list.SetComputeResourceSet((uint)i + 1, resources[i]);
                     }
 
                     list.Dispatch(groupsX, groupsY, groupsZ);
@@ -164,7 +166,16 @@ namespace KumaEngine.Rendering
                 list.SetGraphicsResourceSet(0, item.Resources);
 
                 if (item.definition.UseMaterial && mat != null)
-                    for (int i = 0; i < mat.Resources.Count; i++) list.SetGraphicsResourceSet((uint)i + 1, mat.Resources[i]);
+                {
+                    var resources = mat.GetCompiledMaterial(
+                        DefinitionFile.Game.GraphicsDevice,
+                        DefinitionFile.Game.ResourceFactory,
+                        item
+                    );
+
+                    for (int i = 0; i < resources.Count; i++)
+                        list.SetGraphicsResourceSet((uint)i + 1, resources[i]);
+                }
 
                 list.SetVertexBuffer(0, mdl);
                 list.SetIndexBuffer(model.IndexBuffer, IndexFormat.UInt32);
@@ -225,14 +236,17 @@ namespace KumaEngine.Rendering
                     {
                         ComputeList.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
 
-                        uint currentBindSlot = 1;
-
                         if (pass.definition.UseMaterial && gameObject.Material != null && gameObject.Material != lastBoundMaterial)
                         {
-                            for (int i = 0; i < gameObject.Material.Resources.Count; i++)
-                            {
-                                ComputeList.SetComputeResourceSet(currentBindSlot++, gameObject.Material.Resources[i]);
-                            }
+                            var resources = gameObject.Material.GetCompiledMaterial(
+                                DefinitionFile.Game.GraphicsDevice,
+                                DefinitionFile.Game.ResourceFactory,
+                                pass
+                            );
+
+                            for (int i = 0; i < resources.Count; i++)
+                                    ComputeList.SetComputeResourceSet((uint)i + 1, resources[i]);
+
                             lastBoundMaterial = gameObject.Material;
                         }
 
@@ -264,10 +278,15 @@ namespace KumaEngine.Rendering
 
                     if (pass.definition.UseMaterial && gameObject.Material != null && gameObject.Material != lastBoundGraphicsMaterial)
                     {
-                        for (int i = 0; i < gameObject.Material.Resources.Count; i++)
-                        {
-                            GraphicsList.SetGraphicsResourceSet((uint)i + 1, gameObject.Material.Resources[i]);
-                        }
+                        var resources = gameObject.Material.GetCompiledMaterial(
+                            DefinitionFile.Game.GraphicsDevice,
+                            DefinitionFile.Game.ResourceFactory,
+                            pass
+                        );
+
+                        for (int i = 0; i < resources.Count; i++)
+                            GraphicsList.SetGraphicsResourceSet((uint)i + 1, resources[i]);
+
                         lastBoundGraphicsMaterial = gameObject.Material;
                     }
 

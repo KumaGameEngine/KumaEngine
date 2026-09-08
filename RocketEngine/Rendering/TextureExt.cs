@@ -1,16 +1,27 @@
-﻿using System;
+﻿using StbImageSharp;
+using System;
 using System.IO;
-using Veldrid;
-using StbImageSharp;
 using System.Numerics;
+using Veldrid;
+using Vortice.DXGI;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace KumaEngine.Rendering
 {
     public static class TextureExt
     {
+        static TextureView NullTexture = null!;
+
+        static Dictionary<string,TextureView> _viewCache = new();
+
+        public static void InvalidateCache() => _viewCache.Clear();
+
         public static Vector2 GetSize(string file)
         {
             var defpath = AssetRetriver.FetchAssetPath(AssetKind.Textures, file);
+
+            if (_viewCache.TryGetValue(defpath, out var cv))
+                return new(cv.Target.Width, cv.Target.Height);
 
             ImageResult image;
             using (var stream = File.OpenRead(defpath))
@@ -21,9 +32,65 @@ namespace KumaEngine.Rendering
 
             return new(width,height);
         }
+
+        public static TextureView GetNullTexture(GraphicsDevice device, ResourceFactory factory)
+        {
+            if (NullTexture != null) return NullTexture;
+
+            uint width = 1;
+            uint height = 1;
+
+            Texture deviceTex = factory.CreateTexture(
+                TextureDescription.Texture2D(
+                    width, height,
+                    mipLevels: 1,
+                    arrayLayers: 1,
+                    PixelFormat.R8_G8_B8_A8_UNorm_SRgb,
+                    TextureUsage.Sampled));
+
+            Texture stagingTex = factory.CreateTexture(
+                TextureDescription.Texture2D(
+                    width, height,
+                    mipLevels: 1,
+                    arrayLayers: 1,
+                    PixelFormat.R8_G8_B8_A8_UNorm_SRgb,
+                    TextureUsage.Staging));
+
+            uint[] data = [0xFF00FF];
+
+            device.UpdateTexture(
+                stagingTex,
+                data,
+                x: 0, y: 0, z: 0,
+                width, height, depth: 1,
+                mipLevel: 0, arrayLayer: 0
+            );
+
+            CommandList cl = factory.CreateCommandList();
+            cl.Begin();
+            cl.CopyTexture(
+                stagingTex, 0, 0, 0, 0, 0,
+                deviceTex, 0, 0, 0, 0, 0,
+                width, height, depth: 1, layerCount: 1
+            );
+            cl.End();
+
+            device.SubmitCommands(cl);
+
+            device.DisposeWhenIdle(cl);
+            device.DisposeWhenIdle(stagingTex);
+
+            NullTexture = factory.CreateTextureView(deviceTex);
+
+            return NullTexture;
+        }
+
         public static TextureView ViewFromFile(GraphicsDevice device, ResourceFactory factory, string file, PixelFormat format = PixelFormat.R8_G8_B8_A8_UNorm_SRgb)
         {
             var defpath = AssetRetriver.FetchAssetPath(AssetKind.Textures, file);
+
+            if (_viewCache.TryGetValue(defpath, out var cv))
+                return cv;
 
             ImageResult image;
             using (var stream = File.OpenRead(defpath))
@@ -58,7 +125,8 @@ namespace KumaEngine.Rendering
                         (uint)image.Data.Length,
                         x: 0, y: 0, z: 0,
                         width, height, depth: 1,
-                        mipLevel: 0, arrayLayer: 0);
+                        mipLevel: 0, arrayLayer: 0
+                    );
                 }
             }
 
@@ -67,7 +135,8 @@ namespace KumaEngine.Rendering
             cl.CopyTexture(
                 stagingTex, 0, 0, 0, 0, 0,
                 deviceTex, 0, 0, 0, 0, 0,
-                width, height, depth: 1, layerCount: 1);
+                width, height, depth: 1, layerCount: 1
+            );
             cl.End();
 
             device.SubmitCommands(cl);
@@ -75,13 +144,20 @@ namespace KumaEngine.Rendering
             device.DisposeWhenIdle(cl);
             device.DisposeWhenIdle(stagingTex);
 
-            return factory.CreateTextureView(deviceTex);
+            var view = factory.CreateTextureView(deviceTex);
+
+            _viewCache.Add(defpath,view);
+
+            return view;
         }
 
         public static TextureView CubemapFromFile(
             GraphicsDevice device, ResourceFactory factory, string file, PixelFormat format = PixelFormat.R8_G8_B8_A8_UNorm_SRgb)
         {
             var path = AssetRetriver.FetchAssetPath(AssetKind.Textures, file);
+
+            if (_viewCache.TryGetValue(path, out var cv))
+                return cv;
 
             ImageResult image;
             using (var stream = File.OpenRead(path))
@@ -157,12 +233,16 @@ namespace KumaEngine.Rendering
             Texture deviceTex = factory.CreateTexture(
                 TextureDescription.Texture2D(uFace, uFace, 1, arrayLayers: 6,
                     format,
-                    TextureUsage.Sampled | TextureUsage.Cubemap));
+                    TextureUsage.Sampled | TextureUsage.Cubemap
+                )
+            );
 
             Texture stagingTex = factory.CreateTexture(
                 TextureDescription.Texture2D(uFace, uFace, 1, arrayLayers: 6,
                     format,
-                    TextureUsage.Staging));
+                    TextureUsage.Staging
+                )
+            );
 
             byte[] facePixels = new byte[faceSize * faceSize * 4];
 
@@ -177,7 +257,8 @@ namespace KumaEngine.Rendering
 
                         device.UpdateTexture(stagingTex, (IntPtr)facePtr, (uint)facePixels.Length,
                             0, 0, 0, uFace, uFace, 1,
-                            mipLevel: 0, arrayLayer: layer);
+                            mipLevel: 0, arrayLayer: layer
+                        );
                     }
                 }
             }
@@ -189,16 +270,25 @@ namespace KumaEngine.Rendering
                 cl.CopyTexture(
                     stagingTex, 0, 0, 0, 0, layer,
                     deviceTex, 0, 0, 0, 0, layer,
-                    uFace, uFace, 1, layerCount: 1);
+                    uFace, uFace, 1, layerCount: 1
+                );
             }
             cl.End();
             device.SubmitCommands(cl);
             device.DisposeWhenIdle(cl);
             device.DisposeWhenIdle(stagingTex);
 
-            return factory.CreateTextureView(new TextureViewDescription(deviceTex,
-                baseMipLevel: 0, mipLevels: 1,
-                baseArrayLayer: 0, arrayLayers: 6));
+            var view = factory.CreateTextureView(
+                new TextureViewDescription(
+                    deviceTex,
+                    baseMipLevel: 0, mipLevels: 1,
+                    baseArrayLayer: 0, arrayLayers: 6
+                )
+            );
+
+            _viewCache.Add(path, view);
+
+            return view;
         }
 
         private static void ExtractFace(
