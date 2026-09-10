@@ -37,8 +37,8 @@ namespace KumaEngine.Rendering
         {
             if (NullTexture != null) return NullTexture;
 
-            uint width = 1;
-            uint height = 1;
+            uint width = 2;
+            uint height = 2;
 
             Texture deviceTex = factory.CreateTexture(
                 TextureDescription.Texture2D(
@@ -56,7 +56,7 @@ namespace KumaEngine.Rendering
                     PixelFormat.R8_G8_B8_A8_UNorm_SRgb,
                     TextureUsage.Staging));
 
-            uint[] data = [0xFF00FF];
+            uint[] data = [0xFF00FF,0x0,0x0, 0xFF00FF];
 
             device.UpdateTexture(
                 stagingTex,

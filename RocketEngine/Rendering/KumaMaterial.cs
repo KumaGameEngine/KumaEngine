@@ -96,6 +96,7 @@ namespace KumaEngine.Rendering
                 });
             }
 
+            foreach (var item in _passSetCache) foreach (var item1 in item.Value) item1.Dispose();
             _passSetCache.Clear();
         }
 
@@ -179,8 +180,7 @@ namespace KumaEngine.Rendering
 
         public void Dispose()
         {
-            _passSetCache.Clear();
-            _resourceCache.Clear();
+            Invalidate();
         }
     }
 

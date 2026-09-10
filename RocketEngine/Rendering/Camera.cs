@@ -61,6 +61,8 @@ namespace KumaEngine.Rendering
         public Vector3 Position { get => _position; set { _position = value; UpdateViewMatrix();  } }
         public Vector3 Rotation { get => _rotation; set { _rotation = value; UpdateViewMatrix(); } }
 
+        Vector3 _rotationRadians => Rotation * (MathF.PI / 180f);
+
         public float FarDistance { get => _far; set { _far = value; UpdatePerspectiveMatrix(); } }
         public float FieldOfView { get => _fov; set { _fov = value; } }
         public float OrthographicSize { get => _refdist; set { _refdist = value; } }
@@ -120,7 +122,12 @@ namespace KumaEngine.Rendering
         {
             Vector3 lookDir = GetLookDir();
 
-            Quaternion lookRotation = Quaternion.CreateFromYawPitchRoll(_rotation.Y, _rotation.X, _rotation.Z);
+            Quaternion lookRotation = Quaternion.CreateFromYawPitchRoll(
+                _rotationRadians.Y, 
+                _rotationRadians.X, 
+                _rotationRadians.Z
+            );
+
             Vector3 up = Vector3.Transform(Vector3.UnitY, lookRotation);
 
             _lookDirection = lookDir;
@@ -130,9 +137,24 @@ namespace KumaEngine.Rendering
 
         private Vector3 GetLookDir()
         {
-            Quaternion lookRotation = Quaternion.CreateFromYawPitchRoll(_rotation.Y, _rotation.X, _rotation.Z);
+            Quaternion lookRotation = Quaternion.CreateFromYawPitchRoll(
+                _rotationRadians.Y, 
+                _rotationRadians.X, 
+                _rotationRadians.Z
+            );
+
             Vector3 lookDir = Vector3.Transform(-Vector3.UnitZ, lookRotation);
             return lookDir;
+        }
+
+        public void LookAt(Vector3 target)
+        {
+            Vector3 dir = Vector3.Normalize(target - _position);
+
+            var yaw = MathF.Atan2(-dir.X, -dir.Z);
+            var pitch = MathF.Asin(dir.Y);
+
+            Rotation = new Vector3(pitch, yaw, 0) * (180 / MathF.PI);
         }
 
         public CameraInfo GetCameraInfo() => new CameraInfo

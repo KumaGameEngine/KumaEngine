@@ -176,6 +176,17 @@ namespace KumaEngine.API
         {
             lua.NewTable();
 
+            lua.PushSafeCFunction(ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                Vector3 rot = L.ToVec3(1);
+
+                camera.LookAt(rot);
+
+                return 0;
+            });
+            lua.SetField(-2, "lookAt");
+
             lua.NewTable();
 
             lua.PushSafeCFunction(ilua =>
