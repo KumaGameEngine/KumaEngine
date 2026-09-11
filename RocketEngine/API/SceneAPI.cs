@@ -187,6 +187,28 @@ namespace KumaEngine.API
             });
             lua.SetField(-2, "lookAt");
 
+            lua.PushSafeCFunction(ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                Vector3 ws = L.ToVec3(1);
+
+                L.PushVec3(camera.ProjectVector(ws));
+
+                return 1;
+            });
+            lua.SetField(-2, "projectVector");
+
+            lua.PushSafeCFunction(ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                float plane = (float)L.ToNumber(1);
+
+                L.PushVec3(new(camera.GetUnitsPerPixel(plane),0));
+
+                return 1;
+            });
+            lua.SetField(-2, "getUnitsPerPixel");
+
             lua.NewTable();
 
             lua.PushSafeCFunction(ilua =>

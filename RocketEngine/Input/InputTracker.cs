@@ -18,6 +18,7 @@ namespace KumaEngine.Input
         private static HashSet<MouseButton> _newMouseButtonsThisFrame = new HashSet<MouseButton>();
 
         public static Vector2 MousePosition;
+        public static float ScrollDelta;
         public static InputSnapshot FrameSnapshot { get; private set; }
 
         public static bool GetKey(Key key)
@@ -45,6 +46,8 @@ namespace KumaEngine.Input
             FrameSnapshot = snapshot;
             _newKeysThisFrame.Clear();
             _newMouseButtonsThisFrame.Clear();
+
+            ScrollDelta = snapshot.WheelDelta;
 
             MousePosition = snapshot.MousePosition;
             for (int i = 0; i < snapshot.KeyEvents.Count; i++)

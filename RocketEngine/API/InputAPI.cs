@@ -51,6 +51,14 @@ namespace KumaEngine.API
 
                 return 1;
             }),
+            DefinitionFile.RegisterFunction("getScrollDelta",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+
+                lua.PushNumber(InputTracker.ScrollDelta);
+
+                return 1;
+            }),
             DefinitionFile.RegisterFunction("getMousePositionDelta",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);

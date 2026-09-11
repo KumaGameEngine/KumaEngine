@@ -115,8 +115,33 @@ namespace KumaEngine.Rendering
             float halfw = halfh * coeff;
 
             _projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(-halfw, halfw, -halfh, halfh, _near, _far);
+
             ProjectionChanged?.Invoke(_projectionMatrix);
         }
+
+        public Vector2 GetUnitsPerPixel(float plane)
+        {
+            float worldWidth, worldHeight;
+
+            if (Orthographic)
+            {
+                worldWidth = 2f / _projectionMatrix.M11;
+                worldHeight = 2f / _projectionMatrix.M22;
+            }
+            else
+            {
+                worldWidth = 2f * plane / _projectionMatrix.M11;
+                worldHeight = 2f * plane / _projectionMatrix.M22;
+            }
+
+            return new Vector2(
+                worldWidth / _windowWidth,
+                worldHeight / _windowWidth
+            );
+        }
+
+        public Vector3 ProjectVector(Vector3 worldSpace) =>
+            Vector3.Transform(worldSpace, _viewMatrix * _projectionMatrix);
 
         private void UpdateViewMatrix()
         {
@@ -132,6 +157,7 @@ namespace KumaEngine.Rendering
 
             _lookDirection = lookDir;
             _viewMatrix = Matrix4x4.CreateLookAt(_position, _position + _lookDirection, up);
+
             ViewChanged?.Invoke(_viewMatrix);
         }
 
