@@ -112,10 +112,12 @@ namespace KumaEngine.API
 
         public static void PushSafeCFunction(this Lua lua, string field, string module, LuaFunction fn,bool noset = false)
         {
-            if (!PinnedDelegates.ContainsKey(module + "." + field))
-                PinnedDelegates.Add(module + "." + field, fn);
+            var pin = module + "." + field;
 
-            lua.PushCFunction(fn);
+            if (!PinnedDelegates.ContainsKey(pin))
+                PinnedDelegates.Add(pin, fn);
+
+            lua.PushCFunction(PinnedDelegates[pin]);
 
             if (!noset) lua.SetField(-2, field);
         }
