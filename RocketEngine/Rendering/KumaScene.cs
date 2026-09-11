@@ -1,18 +1,13 @@
-﻿using System.Numerics;
+﻿using BulletSharp;
+using System.Numerics;
 using Veldrid;
 
 namespace KumaEngine.Rendering
 {
     public class KumaScene
     {
-        public static List<GameObject> CurrentGameObjects = new();
-        public static KumaMaterial CurrentSkyboxMaterial = null!;
-        public static List<KumaLight> CurrentLights = new();
-        public static KumaSun CurrentSun = KumaSun.Default;
-
+        public static KumaScene CurrentScene = null!;
         public static DeviceBuffer PointLightBuffer = null!;
-
-        public static Camera CurrentCamera = null!;
 
         public List<GameObject> GameObjects = new();
         public KumaMaterial SkyboxMat = null!;
@@ -20,9 +15,20 @@ namespace KumaEngine.Rendering
         public KumaSun Sun = KumaSun.Default;
         public Camera Camera;
 
+        public DynamicsWorld World;
+        public Vector3 Gravity = new(0,-9.81f,0);
+
         public KumaScene(Camera cam)
         {
             Camera = cam;
+
+            var collisionConf = new DefaultCollisionConfiguration();
+            var dispatcher = new CollisionDispatcher(collisionConf);
+            var broadphase = new DbvtBroadphase();
+            var solver = new SequentialImpulseConstraintSolver();
+
+            World = new DiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConf);
+            World.SetGravity(ref Gravity);
         }
 
         public static void CreateLightBuffers(ResourceFactory factory)
@@ -35,10 +41,10 @@ namespace KumaEngine.Rendering
 
         public static unsafe void UploadLights(GraphicsDevice device)
         {
-            var sorted = CurrentLights
+            var sorted = CurrentScene.Lights
                 .OrderByDescending(light =>
                 {
-                    float dist = Vector3.Distance(CurrentCamera.Position, light.Position);
+                    float dist = Vector3.Distance(CurrentScene.Camera.Position, light.Position);
                     return light.Intensity / dist;
                 })
                 .Take(LightUploadScheme.MAX_POINT_LIGHTS)
@@ -49,26 +55,14 @@ namespace KumaEngine.Rendering
             for (int i = 0; i < sorted.Count; i++)
                 scheme.Lights[i] = sorted[i].reference;
 
-            scheme.Sun = CurrentSun.reference;
+            scheme.Sun = CurrentScene.Sun.reference;
 
             device.UpdateBuffer(PointLightBuffer, 0, ref scheme);
         }
 
         public static void SwitchScene(KumaScene scene,GraphicsDevice device,ResourceFactory factory)
         {
-            CurrentSkyboxMaterial = scene.SkyboxMat;
-
-            foreach (var item in CurrentGameObjects) item.Destroy();
-
-            CurrentGameObjects.Clear();
-            CurrentGameObjects.AddRange(scene.GameObjects);
-
-            CurrentLights.Clear();
-            CurrentLights.AddRange(scene.Lights);
-
-            CurrentSun = scene.Sun;
-
-            CurrentCamera = scene.Camera;
+            CurrentScene = scene;
 
             CreateLightBuffers(factory);
         }

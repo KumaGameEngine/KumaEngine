@@ -20,8 +20,6 @@ namespace KumaEngine
         KumaPipeline SkyboxPipeline;
         Model SkyboxModel;
 
-        Framebuffer scratchfb;
-
         public Game(ApplicationWindow window) : base(window) { }
 
         protected override void CreateResources(ResourceFactory factory)
@@ -96,29 +94,28 @@ namespace KumaEngine
                     2, 1, 3,
                 ]
             };
-
-            scratchfb = new KumaSwapchain(factory,new SwapchainFile()
-            {
-                ColorAttachments = [
-                    new()
-                ]
-            }).Framebuffer;
         }
 
         protected override void Draw(float deltaSeconds)
         {
             GameAPI.GameUpdate(deltaSeconds);
 
-            if (KumaScene.CurrentCamera == null) return;
+            if (KumaScene.CurrentScene == null) return;
 
-            KumaScene.UploadLights(GraphicsDevice);
+            KumaScene.CurrentScene.World.StepSimulation(deltaSeconds, 10);
+
+            if (LightAPI.UpdateLights)
+            {
+                KumaScene.UploadLights(GraphicsDevice);
+                LightAPI.UpdateLights = false;
+            }
 
             GraphicsList.Begin();
             ComputeList.Begin();
 
             KumaPipeline.ResetFramebuffer();
 
-            KumaScene.CurrentCamera.Update(GraphicsList);
+            KumaScene.CurrentScene.Camera.Update(GraphicsList);
 
             foreach (var item in KumaPass.SwapChains.Values)
             {
@@ -138,7 +135,7 @@ namespace KumaEngine
 
             foreach (var item in PipelineAPI.PipelineHandles.Values)
             {
-                var go = KumaScene.CurrentGameObjects.Where(x => 
+                var go = KumaScene.CurrentScene.GameObjects.Where(x => 
                     !(x.Model is null && x.Pipeline is null) && 
                     x.Pipeline == item
                 ).ToArray();
@@ -164,8 +161,8 @@ namespace KumaEngine
             //    );
             //}
 
-            if (KumaScene.CurrentSkyboxMaterial != null)
-                SkyboxPipeline.Draw(GraphicsList, SkyboxModel, KumaScene.CurrentSkyboxMaterial);
+            if (KumaScene.CurrentScene.SkyboxMat != null)
+                SkyboxPipeline.Draw(GraphicsList, SkyboxModel, KumaScene.CurrentScene.SkyboxMat);
 
             foreach (var item in UIAPI.UISurfaceHandles)
             {

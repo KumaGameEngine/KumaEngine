@@ -57,13 +57,13 @@ namespace KumaEngine.Windowing
 
         protected virtual void HandleWindowResize()
         {
-            if (KumaScene.CurrentCamera != null)
-                KumaScene.CurrentCamera.WindowResized(Window.Width, Window.Height);
+            if (KumaScene.CurrentScene != null)
+                KumaScene.CurrentScene.Camera.WindowResized(Window.Width, Window.Height);
         }
 
         protected virtual void OnKeyDown(KeyEvent ke) { }
 
-        public Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);
+        public Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name)!;
 
         public byte[] ReadEmbeddedAssetBytes(string name)
         {

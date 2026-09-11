@@ -22,6 +22,7 @@ namespace KumaEngine.API
             {"pipeline",PipelineAPI.Register},
             {"scene",SceneAPI.Register},
             {"gameObject",GameObjectAPI.Register},
+            {"physics",PhysicsAPI.Register},
             {"input",InputAPI.Register},
             {"game",GameAPI.Register},
             {"vector3",Vector3API.Register},

@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="AssimpNetter" Version="6.0.4" />
+    <PackageReference Include="JAJ.Packages.BulletSharp" Version="1.0.2" />
     <PackageReference Include="KeraLua" Version="1.4.9" />
     <PackageReference Include="KumaEngine.RmlUi.Net" Version="1.0.2-beta.4" />
     <PackageReference Include="StbImageSharp" Version="2.30.15" />

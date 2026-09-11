@@ -63,9 +63,9 @@ namespace KumaEngine.API
 
             lua.PushSafeCFunction(_ =>
             {
-                if (KumaScene.CurrentLights.Contains(LightHandles[handle]))
+                if (KumaScene.CurrentScene != null && KumaScene.CurrentScene.Lights.Contains(LightHandles[handle]))
                 {
-                    KumaScene.CurrentLights.Remove(LightHandles[handle]);
+                    KumaScene.CurrentScene.Lights.Remove(LightHandles[handle]);
                     UpdateLights = true;
                 }
 
@@ -114,7 +114,9 @@ namespace KumaEngine.API
                     case "intensity": light.Intensity = (float)L.ToNumber(3); break;
                 }
 
-                if (KumaScene.CurrentLights.Contains(LightHandles[handle])) UpdateLights = true;
+                if (KumaScene.CurrentScene != null && KumaScene.CurrentScene.Lights.Contains(LightHandles[handle])) 
+                    UpdateLights = true;
+
                 return 0;
             });
             lua.SetField(-2, "__newindex");
@@ -191,7 +193,9 @@ namespace KumaEngine.API
                     case "intensity": light.Intensity = (float)L.ToNumber(3); break;
                 }
 
-                if (KumaScene.CurrentSun == SunHandles[handle]) UpdateLights = true;
+                if (KumaScene.CurrentScene != null && KumaScene.CurrentScene.Sun == SunHandles[handle]) 
+                    UpdateLights = true;
+
                 return 0;
             });
             lua.SetField(-2, "__newindex");

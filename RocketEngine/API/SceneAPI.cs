@@ -29,7 +29,7 @@ namespace KumaEngine.API
             {
                 var lua = Lua.FromIntPtr(ilua);
 
-                lua.PushCamera(KumaScene.CurrentCamera);
+                lua.PushCamera(KumaScene.CurrentScene.Camera);
 
                 return 1;
             }),
@@ -97,6 +97,30 @@ namespace KumaEngine.API
             lua.PushSafeCFunction(ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
+                var go = lua.ToGameObject(1);
+
+                void iteradd(GameObject o)
+                {
+                    foreach (var item in GameObjectAPI.GameObjectHandles.Where(x =>
+                        x.Value.Parent == o &&
+                        !SceneHandles[handle].GameObjects.Contains(o)
+                    ))
+                    {
+                        SceneHandles[handle].GameObjects.Remove(item.Value);
+                        iteradd(item.Value);
+                    }
+                }
+
+                SceneHandles[handle].GameObjects.Remove(go);
+                iteradd(go);
+
+                return 1;
+            });
+            lua.SetField(-2, "removeChild");
+
+            lua.PushSafeCFunction(ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToLight(1);
 
                 SceneHandles[handle].Lights.Add(go);
@@ -104,6 +128,39 @@ namespace KumaEngine.API
                 return 1;
             });
             lua.SetField(-2, "appendLight");
+
+            lua.PushSafeCFunction(ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var go = lua.ToLight(1);
+
+                SceneHandles[handle].Lights.Remove(go);
+
+                return 1;
+            });
+            lua.SetField(-2, "removeLight");
+
+            lua.PushSafeCFunction(ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var go = lua.ToCollisonObject(1);
+
+                SceneHandles[handle].World.AddCollisionObject(go);
+
+                return 1;
+            });
+            lua.SetField(-2, "appendPhysicBody");
+
+            lua.PushSafeCFunction(ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var go = lua.ToCollisonObject(1);
+
+                SceneHandles[handle].World.RemoveCollisionObject(go);
+
+                return 1;
+            });
+            lua.SetField(-2, "removePhysicBody");
 
             lua.PushSafeCFunction(ilua =>
             {
