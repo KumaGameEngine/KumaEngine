@@ -56,12 +56,14 @@ namespace KumaEngine.API
                 LightHandles.Add(handle, light);
             }
 
+            var MODNAME = "light." + handle;
+
             lua.NewTable();
 
             lua.PushInteger(handle);
             lua.SetField(-2, "handle");
 
-            lua.PushSafeCFunction(_ =>
+            lua.PushSafeCFunction("destroy", MODNAME, _ =>
             {
                 if (KumaScene.CurrentScene != null && KumaScene.CurrentScene.Lights.Contains(LightHandles[handle]))
                 {
@@ -73,11 +75,10 @@ namespace KumaEngine.API
 
                 return 0;
             });
-            lua.SetField(-2, "destroy");
 
             lua.NewTable();
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__index", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -97,9 +98,8 @@ namespace KumaEngine.API
                     default: L.PushNil(); return 1;
                 }
             });
-            lua.SetField(-2, "__index");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__newindex", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -119,7 +119,6 @@ namespace KumaEngine.API
 
                 return 0;
             });
-            lua.SetField(-2, "__newindex");
 
             lua.SetMetaTable(-2);
         }
@@ -143,22 +142,23 @@ namespace KumaEngine.API
                 SunHandles.Add(handle, light);
             }
 
+            var MODNAME = "sun." + handle;
+
             lua.NewTable();
 
             lua.PushInteger(handle);
             lua.SetField(-2, "handle");
 
-            lua.PushSafeCFunction(_ =>
+            lua.PushSafeCFunction("destroy", MODNAME, _ =>
             {
                 SunHandles.Remove(handle);
 
                 return 0;
             });
-            lua.SetField(-2, "destroy");
 
             lua.NewTable();
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__index", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -177,9 +177,8 @@ namespace KumaEngine.API
                     default: L.PushNil(); return 1;
                 }
             });
-            lua.SetField(-2, "__index");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__newindex", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -198,7 +197,6 @@ namespace KumaEngine.API
 
                 return 0;
             });
-            lua.SetField(-2, "__newindex");
 
             lua.SetMetaTable(-2);
         }

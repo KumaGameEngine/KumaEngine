@@ -42,7 +42,7 @@ namespace KumaEngine.API
 
             lua.GetGlobal("package");
             lua.GetField(-1, "preload");
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("engine","core",ilua =>
             {
                 lua.NewTable();
 
@@ -53,7 +53,6 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "engine");
             lua.Pop(2);
 
             if (lua.DoFile(AssetRetriver.FetchAssetPath(AssetKind.Scripts,"main.lua")))
@@ -98,10 +97,10 @@ namespace KumaEngine.API
         {
             lua.NewTable();
             lua.PushString("__newindex");
-            lua.PushSafeCFunction(L =>
+            lua.PushSafeCFunction("__newindex","core",L =>
             {
                 throw new Exception("Enum is read-only");
-            });
+            },true);
             lua.SetTable(-3);
             lua.SetMetaTable(-2);
         }
@@ -109,12 +108,16 @@ namespace KumaEngine.API
 
     public static class LuaExtensions
     {
-        public static readonly List<LuaFunction> PinnedDelegates = new();
+        public static readonly Dictionary<string, LuaFunction> PinnedDelegates = new();
 
-        public static void PushSafeCFunction(this Lua lua, LuaFunction fn)
+        public static void PushSafeCFunction(this Lua lua, string field, string module, LuaFunction fn,bool noset = false)
         {
-            PinnedDelegates.Add(fn);
+            if (!PinnedDelegates.ContainsKey(module + "." + field))
+                PinnedDelegates.Add(module + "." + field, fn);
+
             lua.PushCFunction(fn);
+
+            if (!noset) lua.SetField(-2, field);
         }
 
         public static string GetStringField(this Lua lua, int stack, string name)

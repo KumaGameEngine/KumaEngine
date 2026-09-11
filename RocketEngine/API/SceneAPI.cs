@@ -14,6 +14,7 @@ namespace KumaEngine.API
     public static class SceneAPI
     {
         public static Dictionary<int,KumaScene> SceneHandles = new();
+        public static Dictionary<int,Camera> CameraHandles = new();
 
         public static LuaRegister[] Register = 
         [
@@ -21,7 +22,15 @@ namespace KumaEngine.API
             {
                 var lua = Lua.FromIntPtr(ilua);
 
-                lua.PushScene();
+                var scene = new KumaScene(
+                    new Camera(
+                        DefinitionFile.Game.MainSwapchain.Framebuffer.Width,
+                        DefinitionFile.Game.MainSwapchain.Framebuffer.Height,
+                        DefinitionFile.Game.ResourceFactory
+                    )
+                );
+
+                lua.PushScene(scene);
 
                 return 1;
             }),
@@ -50,27 +59,26 @@ namespace KumaEngine.API
             })
         ];
 
-        public static void PushScene(this Lua lua)
+        public static void PushScene(this Lua lua, KumaScene scene)
         {
-            var handle = Random.Shared.Next(int.MinValue, int.MaxValue);
+            var handle = 0;
 
-            SceneHandles.Add(
-                handle, 
-                new KumaScene(
-                    new Camera(
-                        DefinitionFile.Game.MainSwapchain.Framebuffer.Width, 
-                        DefinitionFile.Game.MainSwapchain.Framebuffer.Height, 
-                        DefinitionFile.Game.ResourceFactory
-                    )
-                )
-            );
+            if (SceneHandles.ContainsValue(scene))
+                handle = SceneHandles.First(x => x.Value == scene).Key;
+            else
+            {
+                handle = Random.Shared.Next(int.MinValue, int.MaxValue);
+                SceneHandles.Add(handle, scene);
+            }
+
+            var MODNAME = "scene." + handle;
 
             lua.NewTable();
 
             lua.PushInteger(handle);
             lua.SetField(-2,"handle");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("appendChild", MODNAME, ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToGameObject(1);
@@ -92,9 +100,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "appendChild");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("removeChild", MODNAME, ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToGameObject(1);
@@ -116,9 +123,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "removeChild");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("appendLight", MODNAME, ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToLight(1);
@@ -127,9 +133,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "appendLight");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("removeLight", MODNAME, ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToLight(1);
@@ -138,9 +143,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "removeLight");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("appendPhysicBody", MODNAME, ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToCollisonObject(1);
@@ -149,9 +153,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "appendPhysicBody");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("removePhysicBody", MODNAME, ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToCollisonObject(1);
@@ -160,9 +163,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "removePhysicBody");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("setSkybox", MODNAME, ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
                 var skyfile = lua.ToString(1);
@@ -175,11 +177,10 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "setSkybox");
 
             lua.NewTable();
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__index", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -203,9 +204,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "__index");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__newindex", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -217,7 +217,6 @@ namespace KumaEngine.API
                 }
                 return 0;
             });
-            lua.SetField(-2, "__newindex");
 
             lua.SetMetaTable(-2);
         }
@@ -231,9 +230,21 @@ namespace KumaEngine.API
 
         public static void PushCamera(this Lua lua, Camera camera)
         {
+            var handle = 0;
+
+            if (CameraHandles.ContainsValue(camera))
+                handle = CameraHandles.First(x => x.Value == camera).Key;
+            else
+            {
+                handle = Random.Shared.Next(int.MinValue, int.MaxValue);
+                CameraHandles.Add(handle, camera);
+            }
+
+            var MODNAME = "camera." + handle;
+
             lua.NewTable();
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("lookAt", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 Vector3 rot = L.ToVec3(1);
@@ -242,9 +253,8 @@ namespace KumaEngine.API
 
                 return 0;
             });
-            lua.SetField(-2, "lookAt");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("projectVector", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 Vector3 ws = L.ToVec3(1);
@@ -253,9 +263,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "projectVector");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("getUnitsPerPixel", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 float plane = (float)L.ToNumber(1);
@@ -264,11 +273,10 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "getUnitsPerPixel");
 
             lua.NewTable();
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__index", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -300,9 +308,8 @@ namespace KumaEngine.API
                         return 1;
                 }
             });
-            lua.SetField(-2, "__index");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__newindex", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -326,7 +333,6 @@ namespace KumaEngine.API
                 }
                 return 0;
             });
-            lua.SetField(-2, "__newindex");
 
             lua.SetMetaTable(-2);
         }

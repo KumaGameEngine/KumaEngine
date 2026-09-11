@@ -84,23 +84,24 @@ namespace KumaEngine.API
                 handle = Random.Shared.Next(int.MinValue, int.MaxValue);
                 GameObjectHandles.Add(handle, gameobject);
             }
-            
+
+            var MODNAME = "gameobject." + handle;
+
             lua.NewTable();
 
             lua.PushInteger(handle);
             lua.SetField(-2, "handle");
 
-            lua.PushSafeCFunction(_ =>
+            lua.PushSafeCFunction("destroy", MODNAME, _ =>
             {
                 GameObjectHandles[handle].Destroy();
                 GameObjectHandles.Remove(handle);
                 return 0;
             });
-            lua.SetField(-2, "destroy");
 
             lua.NewTable();
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__index__", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -128,9 +129,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "__index");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__newindex", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -149,7 +149,6 @@ namespace KumaEngine.API
                 }
                 return 0;
             });
-            lua.SetField(-2, "__newindex");
 
             lua.SetMetaTable(-2);
         }

@@ -53,25 +53,25 @@ namespace KumaEngine.API
 
         public static void RegisterMeta(Lua lua)
         {
+            const string MODNAME = "vector3";
+
             lua.NewMetaTable(META);
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__add", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 PushVec3(L, ToVec3(L, 1) + ToVec3(L, 2));
                 return 1;
             });
-            lua.SetField(-2, "__add");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__sub", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 PushVec3(L, ToVec3(L, 1) - ToVec3(L, 2));
                 return 1;
             });
-            lua.SetField(-2, "__sub");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__mul", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 if (L.IsNumber(1))
@@ -80,32 +80,28 @@ namespace KumaEngine.API
                     PushVec3(L, ToVec3(L, 1) * (float)L.ToNumber(2));
                 return 1;
             });
-            lua.SetField(-2, "__mul");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__unm", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 PushVec3(L, -ToVec3(L, 1));
                 return 1;
             });
-            lua.SetField(-2, "__unm");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__eq", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 L.PushBoolean(ToVec3(L, 1) == ToVec3(L, 2));
                 return 1;
             });
-            lua.SetField(-2, "__eq");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__tostring", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 var v = ToVec3(L, 1);
                 L.PushString($"Vector3({v.X}, {v.Y}, {v.Z})");
                 return 1;
             });
-            lua.SetField(-2, "__tostring");
 
             lua.PushCopy(-1);
             lua.SetField(-2, "__index");

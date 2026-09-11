@@ -146,12 +146,14 @@ namespace KumaEngine.API
                 ObjectHandles.Add(handle, collisonObject);
             }
 
+            var MODNAME = "rigidbody." + handle;
+
             lua.NewTable();
 
             lua.PushInteger(handle);
             lua.SetField(-2, "handle");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("applyForce", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 Vector3 force = L.ToVec3(1);
@@ -160,9 +162,8 @@ namespace KumaEngine.API
 
                 return 0;
             });
-            lua.SetField(-2, "applyForce");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("applyImpulse", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 Vector3 force = L.ToVec3(1);
@@ -171,9 +172,8 @@ namespace KumaEngine.API
 
                 return 0;
             });
-            lua.SetField(-2, "applyImpulse");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("awake", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 bool forced = L.ToBoolean(1);
@@ -182,7 +182,6 @@ namespace KumaEngine.API
 
                 return 0;
             });
-            lua.SetField(-2, "awake");
 
             lua.NewTable();
 
@@ -200,7 +199,9 @@ namespace KumaEngine.API
 
         static void PushGenericCollisionProperties(Lua lua,int handle)
         {
-            lua.PushSafeCFunction(ilua =>
+            var MODNAME = "collision." + handle;
+
+            lua.PushSafeCFunction("__index", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -218,9 +219,8 @@ namespace KumaEngine.API
 
                 return 1;
             });
-            lua.SetField(-2, "__index");
 
-            lua.PushSafeCFunction(ilua =>
+            lua.PushSafeCFunction("__newindex", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
@@ -240,7 +240,6 @@ namespace KumaEngine.API
 
                 return 0;
             });
-            lua.SetField(-2, "__newindex");
         }
     }
 }
