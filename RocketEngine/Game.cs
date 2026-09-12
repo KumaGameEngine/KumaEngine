@@ -50,6 +50,7 @@ namespace KumaEngine
                 KumaPipeline.FromSet(factory, "ui"),
                 GraphicsList
             ));
+            Rml.SetFileInterface(new KumaFileInterface());
             Rml.SetSystemInterface(new KumaSystemInterface());
             Rml.Initialise();
 
@@ -166,7 +167,7 @@ namespace KumaEngine
 
             foreach (var item in UIAPI.UISurfaceHandles)
             {
-                item.Value.Update();
+                item.Value.Update(deltaSeconds);
                 item.Value.Render();
             }
 
@@ -181,7 +182,7 @@ namespace KumaEngine
 
         protected override void Closing()
         {
-            if (UIAPI.UISurfaceHandles.Count > 0) Rml.Shutdown();
+
         }
     }
 }

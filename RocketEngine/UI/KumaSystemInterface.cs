@@ -32,5 +32,10 @@ namespace KumaEngine.UI
         {
             
         }
+
+        public override string JoinPath(string path, string file)
+        {
+            return file;
+        }
     }
 }
