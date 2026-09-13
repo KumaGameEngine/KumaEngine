@@ -165,12 +165,13 @@ namespace KumaEngine.API
             {
                 var L = Lua.FromIntPtr(ilua);
                 string p = L.ToString(1);
-                var lfunc = L.GetLuaFunctionArgRef(2);
+                var lfunc = L.GetFunction(2);
 
                 element.AddEventListener(p,ev =>
                 {
+                    DefinitionFile.lua.RawGetInteger(LuaRegistry.Index, lfunc);
                     L.PushElement(ev.TargetElement is null ? ev.CurrentElement! : ev.TargetElement);
-                    L.CallLuaFunction(lfunc,1);
+                    var status = DefinitionFile.lua.PCall(1, 0, 0);
                 });
 
                 return 0;
