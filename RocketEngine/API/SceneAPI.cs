@@ -1,4 +1,5 @@
 ﻿using Assimp;
+using BulletSharp;
 using KeraLua;
 using KumaEngine.Rendering;
 using System;
@@ -178,6 +179,31 @@ namespace KumaEngine.API
                 return 1;
             });
 
+            lua.PushSafeCFunction("raycast", MODNAME, ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                Vector3 origin = lua.ToVec3(1);
+                Vector3 rotation = lua.ToVec3(2);
+                float lenght = (int)lua.ToNumber(3);
+
+                var direction = Camera.EulerToDirection(rotation);
+
+                var to = origin + (direction * lenght);
+
+                ClosestRayResultCallback callback = new(ref origin,ref to);
+
+                SceneHandles[handle].World.RayTest(origin,to,callback);
+
+                if (callback.HasHit) lua.PushHit(
+                    callback.HitPointWorld,
+                    callback.HitNormalWorld,
+                    callback.CollisionObject
+                );
+                else lua.PushNil();
+
+                return 1;
+            });
+
             lua.NewTable();
 
             lua.PushSafeCFunction("__index", MODNAME, ilua =>
@@ -228,6 +254,21 @@ namespace KumaEngine.API
             throw new Exception("Invalid scene handle");
         }
 
+        public static void PushHit(this Lua lua, Vector3 point, Vector3 normal, CollisionObject collision)
+        {
+            lua.NewTable();
+
+            lua.PushVec3(point);
+            lua.SetField(-2, "position");
+
+            lua.PushVec3(normal);
+            lua.SetField(-2, "normal");
+
+            if (collision is RigidBody rb) lua.PushRigidBody(rb);
+            else lua.PushNil();
+            lua.SetField(-2, "object");
+        }
+
         public static void PushCamera(this Lua lua, Camera camera)
         {
             var handle = 0;
@@ -260,6 +301,36 @@ namespace KumaEngine.API
                 Vector3 ws = L.ToVec3(1);
 
                 L.PushVec3(camera.ProjectVector(ws));
+
+                return 1;
+            });
+
+            lua.PushSafeCFunction("unprojectVector", MODNAME, ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                Vector3 ws = L.ToVec3(1);
+
+                L.PushVec3(camera.UnprojectVector(ws));
+
+                return 1;
+            });
+
+            lua.PushSafeCFunction("screenToNdc", MODNAME, ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                Vector3 ws = L.ToVec3(1);
+
+                L.PushVec3(camera.ScreenToNdc(ws));
+
+                return 1;
+            });
+
+            lua.PushSafeCFunction("ndcToScreen", MODNAME, ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                Vector3 ws = L.ToVec3(1);
+
+                L.PushVec3(camera.NdcToScreen(ws));
 
                 return 1;
             });

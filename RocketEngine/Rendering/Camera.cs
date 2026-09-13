@@ -140,8 +140,32 @@ namespace KumaEngine.Rendering
             );
         }
 
-        public Vector3 ProjectVector(Vector3 worldSpace) =>
-            Vector3.Transform(worldSpace, _viewMatrix * _projectionMatrix);
+        public Vector3 ProjectVector(Vector3 worldSpace)
+        {
+            var clip = Vector4.Transform(new Vector4(worldSpace, 1f), _viewMatrix * _projectionMatrix);
+            return new Vector3(clip.X, clip.Y, clip.Z) / clip.W;
+        }
+
+        public Vector3 UnprojectVector(Vector3 ndc)
+        {
+            Matrix4x4.Invert(_viewMatrix * _projectionMatrix, out var inverse);
+            var world = Vector4.Transform(new Vector4(ndc, 1f), inverse);
+            return new Vector3(world.X, world.Y, world.Z) / world.W;
+        }
+
+        public Vector3 ScreenToNdc(Vector3 screenCoord)
+        {
+            float x = (2f * screenCoord.X / _windowWidth) - 1f;
+            float y = 1f - (2f * screenCoord.Y / _windowHeight);
+            return new Vector3(x, y, screenCoord.Z);
+        }
+
+        public Vector3 NdcToScreen(Vector3 screenCoord)
+        {
+            float x = ((screenCoord.X + 1f) / 2f) * _windowWidth;
+            float y = 1f - ((screenCoord.Y + 1f) / 2f) * _windowHeight;
+            return new Vector3(x, y, screenCoord.Z);
+        }
 
         private void UpdateViewMatrix()
         {

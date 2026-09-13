@@ -18,7 +18,7 @@ namespace KumaEngine.API
                 float x = (float)lua.ToNumber(1);
                 float y = (float)lua.ToNumber(2);
                 float z = (float)lua.ToNumber(3);
-                PushVec3(lua, new Vector3(x, y, z));
+                lua.PushVec3(new Vector3(x, y, z));
                 return 1;
             }),
             DefinitionFile.RegisterFunction("dot", ilua =>
@@ -34,7 +34,7 @@ namespace KumaEngine.API
                 var lua = Lua.FromIntPtr(ilua);
                 var a = ToVec3(lua, 1);
                 var b = ToVec3(lua, 2);
-                PushVec3(lua, Vector3.Cross(a, b));
+                lua.PushVec3(Vector3.Cross(a, b));
                 return 1;
             }),
             DefinitionFile.RegisterFunction("length", ilua =>
@@ -46,7 +46,21 @@ namespace KumaEngine.API
             DefinitionFile.RegisterFunction("normalize", ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                PushVec3(lua, Vector3.Normalize(ToVec3(lua, 1)));
+                lua.PushVec3(Vector3.Normalize(ToVec3(lua, 1)));
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("eulerPositions", ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var position = ToVec3(lua, 1);
+                var target = ToVec3(lua, 2);
+
+                Vector3 dir = Vector3.Normalize(target - position);
+
+                var yaw = MathF.Atan2(-dir.X, -dir.Z);
+                var pitch = MathF.Asin(dir.Y);
+
+                lua.PushVec3(new Vector3(pitch, yaw, 0) * (180 / MathF.PI));
                 return 1;
             }),
         ];
@@ -60,14 +74,14 @@ namespace KumaEngine.API
             lua.PushSafeCFunction("__add", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
-                PushVec3(L, ToVec3(L, 1) + ToVec3(L, 2));
+                L.PushVec3(L.ToVec3(1) + L.ToVec3(2));
                 return 1;
             });
 
             lua.PushSafeCFunction("__sub", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
-                PushVec3(L, ToVec3(L, 1) - ToVec3(L, 2));
+                L.PushVec3(L.ToVec3(1) - L.ToVec3(2));
                 return 1;
             });
 
@@ -75,30 +89,30 @@ namespace KumaEngine.API
             {
                 var L = Lua.FromIntPtr(ilua);
                 if (L.IsNumber(1))
-                    PushVec3(L, ToVec3(L, 2) * (float)L.ToNumber(1));
+                    L.PushVec3(L.ToVec3(2) * (float)L.ToNumber(1));
                 else
-                    PushVec3(L, ToVec3(L, 1) * (float)L.ToNumber(2));
+                    L.PushVec3(L.ToVec3(1) * (float)L.ToNumber(2));
                 return 1;
             });
 
             lua.PushSafeCFunction("__unm", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
-                PushVec3(L, -ToVec3(L, 1));
+                L.PushVec3(-L.ToVec3(1));
                 return 1;
             });
 
             lua.PushSafeCFunction("__eq", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
-                L.PushBoolean(ToVec3(L, 1) == ToVec3(L, 2));
+                L.PushBoolean(L.ToVec3(1) == L.ToVec3(2));
                 return 1;
             });
 
             lua.PushSafeCFunction("__tostring", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
-                var v = ToVec3(L, 1);
+                var v = L.ToVec3(1);
                 L.PushString($"Vector3({v.X}, {v.Y}, {v.Z})");
                 return 1;
             });
