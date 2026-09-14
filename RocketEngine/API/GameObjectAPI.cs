@@ -101,7 +101,7 @@ namespace KumaEngine.API
 
             lua.NewTable();
 
-            lua.PushSafeCFunction("__index__", MODNAME, ilua =>
+            lua.PushSafeCFunction("__index", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);

@@ -88,7 +88,7 @@ namespace KumaEngine.API
                 {
                     foreach (var item in GameObjectAPI.GameObjectHandles.Where(x=>
                         x.Value.Parent == o && 
-                        !SceneHandles[handle].GameObjects.Contains(o)
+                        !SceneHandles[handle].GameObjects.Contains(x.Value)
                     ))
                     {
                         SceneHandles[handle].GameObjects.Add(item.Value);

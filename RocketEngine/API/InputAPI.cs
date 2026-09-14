@@ -30,11 +30,47 @@ namespace KumaEngine.API
                 var lua = Lua.FromIntPtr(ilua);
                 var key = lua.ToInteger(1);
 
+                lua.PushBoolean(InputTracker.GetKeyDown((Key)key));
+
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("isKeyPressed",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var key = lua.ToInteger(1);
+
                 lua.PushBoolean(InputTracker.GetKey((Key)key));
 
                 return 1;
             }),
+            DefinitionFile.RegisterFunction("isKeyReleased",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var key = lua.ToInteger(1);
+
+                lua.PushBoolean(InputTracker.GetKeyReleased((Key)key));
+
+                return 1;
+            }),
             DefinitionFile.RegisterFunction("isMouseDown",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var key = lua.ToInteger(1);
+
+                lua.PushBoolean(InputTracker.GetMouseButtonDown((MouseButton)key));
+
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("isMouseReleased",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var key = lua.ToInteger(1);
+
+                lua.PushBoolean(InputTracker.GetMouseReleased((MouseButton)key));
+
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("isMousePressed",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
                 var key = lua.ToInteger(1);

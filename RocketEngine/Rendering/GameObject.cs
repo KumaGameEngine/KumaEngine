@@ -18,9 +18,8 @@ namespace KumaEngine.Rendering
 
         public GameObject Parent = null!;
 
-        Matrix4x4 _PTransform = Matrix4x4.Identity;
-        Matrix4x4 _LTransform = Matrix4x4.Identity;
-        Matrix4x4 _ATransform = Matrix4x4.Identity;
+        Matrix4x4 _GTransform = Matrix4x4.Identity;
+        Matrix4x4 _PTransformCache = Matrix4x4.Identity;
 
         Vector3 _Pos, _Rot, _Size = Vector3.One;
 
@@ -34,40 +33,35 @@ namespace KumaEngine.Rendering
 
         void UpdateTransform()
         {
-            Transform = Matrix4x4.CreateScale(_Size)
+            var pos = _Pos;
+            var rot = _Rot;
+            var size = _Size;
+
+            if (Parent is not null)
+            {
+                pos += Parent.Position;
+                rot += Parent.Rotation;
+                size *= Parent.Size;
+
+                _PTransformCache = Parent.Transform;
+            }
+
+            Transform = Matrix4x4.CreateScale(size)
                  * Matrix4x4.CreateFromYawPitchRoll(
-                     _Rot.Y * EULER_TO_RAD, 
-                     _Rot.X * EULER_TO_RAD, 
-                     _Rot.Z * EULER_TO_RAD
-                 ) * Matrix4x4.CreateTranslation(_Pos);
+                     rot.Y * EULER_TO_RAD, 
+                     rot.X * EULER_TO_RAD, 
+                     rot.Z * EULER_TO_RAD
+                 ) * Matrix4x4.CreateTranslation(pos);
         }
 
-        void SetTransform(Matrix4x4 value)
-        {
-            _LTransform = value;
-            UpdateTransformParent();
-        }
+        void SetTransform(Matrix4x4 value) => _GTransform = value;
 
         Matrix4x4 GetTransform()
         {
-            UpdateTransformParent();
-            return _ATransform;
-        }
+            if (Parent is not null && _PTransformCache != Parent.Transform)
+                UpdateTransform();
 
-        void UpdateTransformParent()
-        {
-            if (Parent is null)
-            {
-                _ATransform = _LTransform;
-                return;
-            }
-
-            if (Parent.Transform != _PTransform) _PTransform = Parent.Transform;
-
-            GameObjectAPI.DecomposeTransform(_LTransform, out var pos, out var angle, out var scale);
-            GameObjectAPI.DecomposeTransform(_PTransform, out var ppos, out var pangle, out var pscale);
-
-            _ATransform = GameObjectAPI.ComposeTransform(ppos + pos, pangle + angle, pscale * scale);
+            return _GTransform;
         }
 
         public GameObject(string name,KumaPipeline pipeline,Model model)

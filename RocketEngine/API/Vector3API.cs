@@ -81,6 +81,7 @@ namespace KumaEngine.API
             lua.PushSafeCFunction("__sub", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
+
                 L.PushVec3(L.ToVec3(1) - L.ToVec3(2));
                 return 1;
             });
@@ -92,6 +93,13 @@ namespace KumaEngine.API
                     L.PushVec3(L.ToVec3(2) * (float)L.ToNumber(1));
                 else
                     L.PushVec3(L.ToVec3(1) * (float)L.ToNumber(2));
+                return 1;
+            });
+
+            lua.PushSafeCFunction("__div", MODNAME, ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                L.PushVec3(L.ToVec3(1) / (float)L.ToNumber(2));
                 return 1;
             });
 

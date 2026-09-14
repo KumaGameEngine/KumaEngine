@@ -35,7 +35,7 @@ namespace KumaEngine.Input
             return _newKeysThisFrame.Contains(key);
         }
 
-        public static bool GetKeyRelesed(Key key)
+        public static bool GetKeyReleased(Key key)
         {
             return _KeysPreviousFrame.Contains(key);
         }

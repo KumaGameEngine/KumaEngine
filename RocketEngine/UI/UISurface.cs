@@ -108,7 +108,7 @@ namespace KumaEngine.UI
                         ctx.ProcessKeyDown(item.Value, RmlUiNet.Input.KeyModifier.None);
                     }
 
-                    if (InputTracker.GetKeyRelesed(item.Key))
+                    if (InputTracker.GetKeyReleased(item.Key))
                         ctx.ProcessKeyUp(item.Value, RmlUiNet.Input.KeyModifier.None);
                 }
 
