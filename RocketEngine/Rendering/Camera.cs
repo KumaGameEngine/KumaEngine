@@ -3,6 +3,9 @@
     Modified by: RocketEngine Team
 */
 
+using Assimp;
+using KumaEngine.OpenAL;
+using KumaEngine.OpenAL.Source;
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -72,13 +75,30 @@ namespace KumaEngine.Rendering
 
         public float MoveSpeed { get => _moveSpeed; set => _moveSpeed = value; }
         public Vector3 Forward => GetLookDir();
-        public Vector3 right => Vector3.Normalize(Vector3.Cross(Forward, Vector3.UnitY));
+        public Vector3 Right
+        {
+            get
+            {
+                Vector3 cross = Vector3.Cross(Forward, Vector3.UnitY);
+
+                return cross.LengthSquared() < 0.0001f
+                    ? Vector3.Normalize(Vector3.Cross(Forward, Vector3.UnitZ))
+                    : Vector3.Normalize(cross);
+            }
+        }
+        public Vector3 Up => Vector3.Cross(Right, Forward);
 
         public void Update(CommandList cl)
         {
             cl.UpdateBuffer(_cameraProjViewBuffer,0, new MatrixPair(_viewMatrix, _projectionMatrix));
             cl.UpdateBuffer(_cameraProjViewInverseBuffer,0, new MatrixPair(Matrix4x4.Invert(_viewMatrix, out var viewInverse) ? viewInverse : _viewMatrix, Matrix4x4.Invert(_projectionMatrix, out var projInverse) ? projInverse : _projectionMatrix));
             cl.UpdateBuffer(_cameraPosBuffer, 0, GetCameraInfo());
+
+            var dir = Forward;
+            var up = Up;
+
+            AL.SetListener(ALListenerVector3.Position, _position.X, _position.Y, _position.Z);
+            AL.SetListener(ALListenerFloatArray.Orientation, [dir.X, dir.Y, dir.Z, up.X, up.Y, up.Z]);
         }
 
         private float Clamp(float value, float min, float max)

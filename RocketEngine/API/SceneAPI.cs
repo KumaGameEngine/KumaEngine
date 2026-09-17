@@ -363,7 +363,10 @@ namespace KumaEngine.API
                         L.PushVec3(camera.Forward);
                         return 1;
                     case "right":
-                        L.PushVec3(camera.right);
+                        L.PushVec3(camera.Right);
+                        return 1;
+                    case "up":
+                        L.PushVec3(camera.Up);
                         return 1;
                     case "orthographic":
                         L.PushBoolean(camera.Orthographic);

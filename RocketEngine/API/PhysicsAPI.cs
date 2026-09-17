@@ -194,7 +194,7 @@ namespace KumaEngine.API
         {
             int val = lua.GetIntField(index, "handle");
             if (ObjectHandles.TryGetValue(val, out var go)) return go;
-            throw new Exception("Invalid GameObject handle");
+            throw new Exception("Invalid CollisionObject handle");
         }
 
         static void PushGenericCollisionProperties(Lua lua,int handle)

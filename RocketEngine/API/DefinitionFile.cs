@@ -30,6 +30,7 @@ namespace KumaEngine.API
             {"light",LightAPI.Register},
             {"material",MaterialAPI.Register},
             {"ui",UIAPI.Register},
+            {"audio",AudioAPI.Register},
         };
 
         public static void Init()

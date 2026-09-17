@@ -1,4 +1,8 @@
 ﻿using KumaEngine.API;
+using KumaEngine.Audio;
+using KumaEngine.OpenAL;
+using KumaEngine.OpenAL.Native;
+using KumaEngine.OpenAL.Source;
 using KumaEngine.Rendering;
 using KumaEngine.Rendering.VertexTypes;
 using KumaEngine.UI;
@@ -25,6 +29,10 @@ namespace KumaEngine
         protected override void CreateResources(ResourceFactory factory)
         {
             DefinitionFile.Game = this;
+
+            var dev = new ALDevice(null!);
+            var ctx = dev.CreateContext([]);
+            ctx.MakeCurrent();
 
             Camera._cameraProjViewBuffer = factory.CreateBuffer(
                 new BufferDescription((uint)Unsafe.SizeOf<MatrixPair>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));

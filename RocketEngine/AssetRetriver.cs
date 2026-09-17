@@ -15,7 +15,8 @@ namespace KumaEngine
         Shaders,
         Swapchains,
         Textures,
-        UI
+        UI,
+        Audio
     }
 
     public static class AssetRetriver
