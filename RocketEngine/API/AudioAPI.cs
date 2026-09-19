@@ -1,6 +1,7 @@
 ﻿using Assimp;
 using KeraLua;
 using KumaEngine.Audio;
+using KumaEngine.OpenAL.Source;
 using KumaEngine.Rendering;
 using KumaEngine.UI;
 using RmlUiNet;
@@ -18,6 +19,27 @@ namespace KumaEngine.API
 {
     public static class AudioAPI
     {
+        static Dictionary<string, ALSourceFloat> FloatVariableKeys = new()
+        {
+            {"pitch", ALSourceFloat.Pitch},
+            {"gain", ALSourceFloat.Gain},
+            {"minGain", ALSourceFloat.MinGain},
+            {"maxGain", ALSourceFloat.MaxGain},
+            {"maxDistance", ALSourceFloat.MaxDistance},
+            {"rolloff", ALSourceFloat.RolloffFactor},
+            {"coneOuterGain", ALSourceFloat.ConeOuterGain},
+            {"coneInnerAngle", ALSourceFloat.ConeInnerAngle},
+            {"coneOuterAngle", ALSourceFloat.ConeOuterAngle},
+            {"referenceDistance", ALSourceFloat.ReferenceDistance},
+        };
+
+        static Dictionary<string, ALSourceVector3> Vec3VariableKeys = new()
+        {
+            {"position", ALSourceVector3.Position},
+            {"direction", ALSourceVector3.Direction},
+            {"velocity", ALSourceVector3.Velocity},
+        };
+
         public static Dictionary<int, AudioStream> AudioStreamHandles = new();
 
         public static LuaRegister[] Register = 
@@ -61,9 +83,8 @@ namespace KumaEngine.API
                 var L = Lua.FromIntPtr(ilua);
 
                 var pos = L.ToVec3(1);
-                var looping = L.ToBoolean(2);
 
-                AudioStreamHandles[handle].Play(pos,looping:looping);
+                AudioStreamHandles[handle].Play(pos);
 
                 return 1;
             });
@@ -72,9 +93,7 @@ namespace KumaEngine.API
             {
                 var L = Lua.FromIntPtr(ilua);
 
-                var looping = L.ToBoolean(1);
-
-                AudioStreamHandles[handle].Play(Vector3.Zero, looping:looping, relative: true);
+                AudioStreamHandles[handle].Play(Vector3.Zero,true);
 
                 return 1;
             });
@@ -119,13 +138,45 @@ namespace KumaEngine.API
                 var L = Lua.FromIntPtr(ilua);
                 string key = L.ToString(2);
 
+                if (FloatVariableKeys.TryGetValue(key,out var sourceflt))
+                {
+                    L.PushNumber(AudioStreamHandles[handle].GetFloat(sourceflt));
+                    return 1;
+                }
+
+                if (Vec3VariableKeys.TryGetValue(key, out var sourcevec))
+                {
+                    L.PushVec3(AudioStreamHandles[handle].GetVec3(sourcevec));
+                    return 1;
+                }
+
                 switch (key)
                 {
                     case "isPlaying": L.PushBoolean(AudioStreamHandles[handle].IsPlaying); return 1;
                     case "isPaused": L.PushBoolean(AudioStreamHandles[handle].IsPaused); return 1;
                     case "isStopped": L.PushBoolean(AudioStreamHandles[handle].IsStopped); return 1;
+                    case "isLooping": L.PushBoolean(AudioStreamHandles[handle].IsLooping); return 1;
                     default: L.PushNil(); return 1;
                 }
+            });
+
+            lua.PushSafeCFunction("__newindex", MODNAME, ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                string key = L.ToString(2);
+
+                if (FloatVariableKeys.TryGetValue(key, out var sourceflt))
+                    AudioStreamHandles[handle].SetFloat(sourceflt, (float)L.ToNumber(3));
+
+                if (Vec3VariableKeys.TryGetValue(key, out var sourcevec))
+                    AudioStreamHandles[handle].SetVec3(sourcevec,L.ToVec3(3));
+
+                switch (key)
+                {
+                    case "isLooping": AudioStreamHandles[handle].IsLooping = L.ToBoolean(3); return 1;
+                }
+
+                return 0;
             });
 
             lua.SetMetaTable(-2);
