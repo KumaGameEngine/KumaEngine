@@ -17,7 +17,7 @@ namespace KumaEngine.Rendering
 {
     public class KumaMaterial : IDisposable
     {
-        public Guid MaterialID { get; } = new();
+        public Guid MaterialID { get; } = Guid.NewGuid();
 
         public Dictionary<string, MaterialResource> Textures = new();
 

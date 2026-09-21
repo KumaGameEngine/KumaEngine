@@ -13,7 +13,7 @@ namespace KumaEngine.Rendering
 {
     public class Model : IDisposable
     {
-        public Guid ModelID { get; } = new();
+        public Guid ModelID { get; } = Guid.NewGuid();
         public DeviceBuffer IndexBuffer { get; private set; }
 
         public VertexDescriptionSet Vertices { get; set; } = new();

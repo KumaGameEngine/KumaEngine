@@ -266,7 +266,8 @@ namespace KumaEngine.Rendering
                 GraphicsList.SetGraphicsResourceSet(0, pass.Resources);
 
                 KumaMaterial lastBoundGraphicsMaterial = null!;
-                DeviceBuffer lastBoundVertexBuffer = null!;
+                Guid lastBoundModelId = Guid.Empty;
+                uint lastModelIndices = 0;
 
                 var sortedGraphicsObjects = obj
                     .OrderBy(x => x.Material?.MaterialID ?? Guid.Empty)
@@ -290,22 +291,24 @@ namespace KumaEngine.Rendering
                         lastBoundGraphicsMaterial = gameObject.Material;
                     }
 
-                    var model = gameObject.Model;
-
-                    var mdl = model.GetCompiledVerticies(
-                        DefinitionFile.Game.GraphicsDevice,
-                        DefinitionFile.Game.GraphicsDevice.ResourceFactory,
-                        this
-                    );
-
-                    if (mdl != lastBoundVertexBuffer)
+                    if (gameObject.Model.ModelID != lastBoundModelId)
                     {
+                        var model = gameObject.Model;
+
+                        var mdl = model.GetCompiledVerticies(
+                            DefinitionFile.Game.GraphicsDevice,
+                            DefinitionFile.Game.GraphicsDevice.ResourceFactory,
+                            this
+                        );
+
                         GraphicsList.SetVertexBuffer(0, mdl);
                         GraphicsList.SetIndexBuffer(model.IndexBuffer, IndexFormat.UInt32);
-                        lastBoundVertexBuffer = mdl;
+
+                        lastModelIndices = (uint)model.Indices.Count;
+                        lastBoundModelId = model.ModelID;
                     }
 
-                    GraphicsList.DrawIndexed((uint)model.Indices.Count);
+                    GraphicsList.DrawIndexed(lastModelIndices);
                 }
 
                 GraphicsDispatchable = true;
