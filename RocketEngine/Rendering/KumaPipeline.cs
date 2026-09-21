@@ -265,7 +265,7 @@ namespace KumaEngine.Rendering
                 GraphicsList.SetPipeline(pass.Pipeline);
                 GraphicsList.SetGraphicsResourceSet(0, pass.Resources);
 
-                KumaMaterial lastBoundGraphicsMaterial = null!;
+                Guid lastBoundGraphicsMaterialId = Guid.Empty;
                 Guid lastBoundModelId = Guid.Empty;
                 uint lastModelIndices = 0;
 
@@ -277,7 +277,7 @@ namespace KumaEngine.Rendering
                 {
                     GraphicsList.UpdateBuffer(ModelBuffer, 0, new RocketModelScheme(gameObject.Transform));
 
-                    if (pass.definition.UseMaterial && gameObject.Material != null && gameObject.Material != lastBoundGraphicsMaterial)
+                    if (pass.definition.UseMaterial && gameObject.Material != null && gameObject.Material.MaterialID != lastBoundGraphicsMaterialId)
                     {
                         var resources = gameObject.Material.GetCompiledMaterial(
                             DefinitionFile.Game.GraphicsDevice,
@@ -288,7 +288,7 @@ namespace KumaEngine.Rendering
                         for (int i = 0; i < resources.Count; i++)
                             GraphicsList.SetGraphicsResourceSet((uint)i + 1, resources[i]);
 
-                        lastBoundGraphicsMaterial = gameObject.Material;
+                        lastBoundGraphicsMaterialId = gameObject.Material.MaterialID;
                     }
 
                     if (gameObject.Model.ModelID != lastBoundModelId)
