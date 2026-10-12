@@ -1,5 +1,6 @@
 ﻿using Assimp;
 using KeraLua;
+using KumaEngine.Rendering;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -31,6 +32,8 @@ namespace KumaEngine.API
             {"material",MaterialAPI.Register},
             {"ui",UIAPI.Register},
             {"audio",AudioAPI.Register},
+            {"camera",CameraAPI.Register},
+            {"swapchain",SwapchainAPI.Register},
         };
 
         public static void Init()
@@ -51,6 +54,7 @@ namespace KumaEngine.API
 
                 PushEnum<Key>("key");
                 PushEnum<MouseButton>("mouseButton");
+                PushEnum<CameraClearMode>("clearMode");
 
                 return 1;
             });

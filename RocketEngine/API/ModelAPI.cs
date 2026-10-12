@@ -67,26 +67,26 @@ namespace KumaEngine.API
                 return 0;
             });
 
-            lua.PushNumList(model.Indices);
+            lua.PushNumList(MODNAME + ".indices",model.Indices);
             lua.SetField(-2, "indices");
 
             {
                 lua.NewTable();
 
-                lua.PushVector3List(model.Vertices.Vertices);
+                lua.PushVector3List(MODNAME + ".positions", model.Vertices.Vertices);
                 lua.SetField(-2, "positions");
 
-                lua.PushVector3List(model.Vertices.Normals);
+                lua.PushVector3List(MODNAME + ".normals", model.Vertices.Normals);
                 lua.SetField(-2, "normals");
 
-                lua.PushVector3List(model.Vertices.Tangents);
+                lua.PushVector3List(MODNAME + ".tangents", model.Vertices.Tangents);
                 lua.SetField(-2, "tangents");
 
                 lua.PushSafeCFunction("getUVWLayer", MODNAME, ilua =>
                 {
                     var L = Lua.FromIntPtr(ilua);
                     int key = (int)L.ToInteger(1);
-                    L.PushVector3List(model.Vertices.UVWLayers[key]);
+                    L.PushVector3List(MODNAME + ".getUVWLayer."+key, model.Vertices.UVWLayers[key]);
                     return 1;
                 });
 
@@ -94,7 +94,7 @@ namespace KumaEngine.API
                 {
                     var L = Lua.FromIntPtr(ilua);
                     int key = (int)L.ToInteger(1);
-                    L.PushVector4List(ModelHandles[handle].Vertices.ColorLayers[key]);
+                    L.PushVector4List(MODNAME + ".getUVWLayer." + key, ModelHandles[handle].Vertices.ColorLayers[key]);
                     return 1;
                 });
 
@@ -189,21 +189,19 @@ namespace KumaEngine.API
             throw new Exception("Invalid model handle");
         }
 
-        public static void PushNumList<T>(this Lua lua, List<T> list) where T : INumber<T> =>
-            PushList(lua,list,
+        public static void PushNumList<T>(this Lua lua, string MODNAME, List<T> list) where T : INumber<T> =>
+            PushList(lua, MODNAME, list,
                 (l,v) => l.PushNumber(long.CreateTruncating(v)), 
                 (l,_) => T.CreateTruncating(l.ToNumber(3))
             );
 
-        public static void PushVector3List(this Lua lua, List<Vector3> list) =>
-            PushList(lua,list,(l,v) => l.PushVec3(v), (l, _) => l.ToVec3(3));
-        public static void PushVector4List(this Lua lua, List<Vector4> list) =>
-            PushList(lua, list, (l, v) => l.PushVec4(v), (l,_) => l.ToVec4(3));
+        public static void PushVector3List(this Lua lua, string MODNAME, List<Vector3> list) =>
+            PushList(lua, MODNAME, list,(l,v) => l.PushVec3(v), (l, _) => l.ToVec3(3));
+        public static void PushVector4List(this Lua lua, string MODNAME, List<Vector4> list) =>
+            PushList(lua, MODNAME, list, (l, v) => l.PushVec4(v), (l,_) => l.ToVec4(3));
 
-        public static void PushList<T>(this Lua lua, List<T> list, Action<Lua,T> push, Func<Lua, int, T> get)
+        public static void PushList<T>(this Lua lua, string MODNAME, List<T> list, Action<Lua,T> push, Func<Lua, int, T> get)
         {
-            const string MODNAME = "list";
-
             lua.NewTable();
             lua.NewTable();
 
@@ -212,7 +210,7 @@ namespace KumaEngine.API
                 var L = Lua.FromIntPtr(ilua);
                 int key = (int)L.ToInteger(2) - 1;
 
-                push(lua,list[key]);
+                push(L,list[key]);
                 return 1;
             });
 
@@ -221,7 +219,7 @@ namespace KumaEngine.API
                 var L = Lua.FromIntPtr(ilua);
                 int key = (int)L.ToInteger(2) - 1;
 
-                list[key] = get(lua,key);
+                list[key] = get(L,key);
 
                 return 0;
             });

@@ -43,8 +43,6 @@ namespace KumaEngine
             Camera._cameraPosBuffer = factory.CreateBuffer(
                 new BufferDescription((uint)Unsafe.SizeOf<CameraInfo>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
-            KumaScene.CreateLightBuffers(factory);
-
             KumaPass.SwapChains.Add("MainSwapchain", null!);
 
             GraphicsList = factory.CreateCommandList();
@@ -113,18 +111,16 @@ namespace KumaEngine
 
             KumaScene.CurrentScene.World.StepSimulation(deltaSeconds, 10);
 
-            if (LightAPI.UpdateLights)
+            if (KumaScene.CurrentScene.LightsDirty)
             {
                 KumaScene.UploadLights(GraphicsDevice);
-                LightAPI.UpdateLights = false;
+                KumaScene.CurrentScene.LightsDirty = false;
             }
 
             GraphicsList.Begin();
             ComputeList.Begin();
 
             KumaPipeline.ResetFramebuffer();
-
-            KumaScene.CurrentScene.Camera.Update(GraphicsList);
 
             foreach (var item in KumaPass.SwapChains.Values)
             {
@@ -149,32 +145,35 @@ namespace KumaEngine
                     x.Pipeline == item
                 ).ToArray();
 
-                if (go.Length > 0) item.Draw(GraphicsList, ComputeList, go);
+                if (go.Length > 0)
+                {
+                    foreach (var camera in KumaScene.CurrentScene.Cameras)
+                    {
+                        if (!camera.Enabled) continue;
+
+                        camera.Update(GraphicsList);
+                        item.Draw(GraphicsList, ComputeList, camera, go);
+                    }
+                }
             }
 
-            //foreach (var item in KumaPass.SwapChains.Values)
-            //{
-            //    if (item == null) continue;
-
-            //    var ctarget = MainSwapchain.Framebuffer.ColorTargets.First().Target;
-
-            //    for (int i = 0; i < item.BlitColorIDS.Count; i++)
-            //        if (item.BlitColorIDS[i]) GraphicsList.CopyTexture(
-            //            item.Attachments.Values.ElementAt(i).Target,
-            //            ctarget
-            //        );
-
-            //    if (item.BlitDepth > -1) GraphicsList.CopyTexture(
-            //        item.Attachments.Values.ElementAt(item.BlitDepth).Target,
-            //        MainSwapchain.Framebuffer.DepthTarget?.Target
-            //    );
-            //}
-
             if (KumaScene.CurrentScene.SkyboxMat != null)
-                SkyboxPipeline.Draw(GraphicsList, SkyboxModel, KumaScene.CurrentScene.SkyboxMat);
+            {
+                foreach (var item in KumaScene.CurrentScene.Cameras)
+                {
+                    if (!item.Enabled) continue;
+                    if (item.ClearMode != CameraClearMode.Skybox) continue;
+
+                    SkyboxPipeline.Draw(GraphicsList, item, SkyboxModel, KumaScene.CurrentScene.SkyboxMat);
+                }
+            }
 
             foreach (var item in UIAPI.UISurfaceHandles)
             {
+                if (!item.Value.Camera.Enabled) continue;
+
+                KumaUiRenderInterface.RenderCamera = item.Value.Camera;
+
                 item.Value.Update(deltaSeconds);
                 item.Value.Render();
             }

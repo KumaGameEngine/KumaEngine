@@ -15,7 +15,6 @@ namespace KumaEngine.API
     public static class SceneAPI
     {
         public static Dictionary<int,KumaScene> SceneHandles = new();
-        public static Dictionary<int,Camera> CameraHandles = new();
 
         public static LuaRegister[] Register = 
         [
@@ -25,21 +24,11 @@ namespace KumaEngine.API
 
                 var scene = new KumaScene(
                     new Camera(
-                        DefinitionFile.Game.MainSwapchain.Framebuffer.Width,
-                        DefinitionFile.Game.MainSwapchain.Framebuffer.Height,
                         DefinitionFile.Game.ResourceFactory
-                    )
+                    ) { Enabled = true }
                 );
 
                 lua.PushScene(scene);
-
-                return 1;
-            }),
-            DefinitionFile.RegisterFunction("getCamera",ilua =>
-            {
-                var lua = Lua.FromIntPtr(ilua);
-
-                lua.PushCamera(KumaScene.CurrentScene.Camera);
 
                 return 1;
             }),
@@ -78,6 +67,9 @@ namespace KumaEngine.API
 
             lua.PushInteger(handle);
             lua.SetField(-2,"handle");
+
+            lua.PushCameraList(MODNAME + ".cameras", SceneHandles[handle].Cameras);
+            lua.SetField(-2, "cameras");
 
             lua.PushSafeCFunction("appendChild", MODNAME, ilua =>
             {
@@ -212,9 +204,6 @@ namespace KumaEngine.API
                 string key = L.ToString(2);
                 switch (key)
                 {
-                    case "camera":
-                        L.PushCamera(SceneHandles[handle].Camera);
-                        return 1;
                     case "sun":
                         L.PushSun(SceneHandles[handle].Sun);
                         return 1;
@@ -267,148 +256,6 @@ namespace KumaEngine.API
             if (collision is RigidBody rb) lua.PushRigidBody(rb);
             else lua.PushNil();
             lua.SetField(-2, "object");
-        }
-
-        public static void PushCamera(this Lua lua, Camera camera)
-        {
-            var handle = 0;
-
-            if (CameraHandles.ContainsValue(camera))
-                handle = CameraHandles.First(x => x.Value == camera).Key;
-            else
-            {
-                handle = Random.Shared.Next(int.MinValue, int.MaxValue);
-                CameraHandles.Add(handle, camera);
-            }
-
-            var MODNAME = "camera." + handle;
-
-            lua.NewTable();
-
-            lua.PushSafeCFunction("lookAt", MODNAME, ilua =>
-            {
-                var L = Lua.FromIntPtr(ilua);
-                Vector3 rot = L.ToVec3(1);
-
-                camera.LookAt(rot);
-
-                return 0;
-            });
-
-            lua.PushSafeCFunction("projectVector", MODNAME, ilua =>
-            {
-                var L = Lua.FromIntPtr(ilua);
-                Vector3 ws = L.ToVec3(1);
-
-                L.PushVec3(camera.ProjectVector(ws));
-
-                return 1;
-            });
-
-            lua.PushSafeCFunction("unprojectVector", MODNAME, ilua =>
-            {
-                var L = Lua.FromIntPtr(ilua);
-                Vector3 ws = L.ToVec3(1);
-
-                L.PushVec3(camera.UnprojectVector(ws));
-
-                return 1;
-            });
-
-            lua.PushSafeCFunction("screenToNdc", MODNAME, ilua =>
-            {
-                var L = Lua.FromIntPtr(ilua);
-                Vector3 ws = L.ToVec3(1);
-
-                L.PushVec3(camera.ScreenToNdc(ws));
-
-                return 1;
-            });
-
-            lua.PushSafeCFunction("ndcToScreen", MODNAME, ilua =>
-            {
-                var L = Lua.FromIntPtr(ilua);
-                Vector3 ws = L.ToVec3(1);
-
-                L.PushVec3(camera.NdcToScreen(ws));
-
-                return 1;
-            });
-
-            lua.PushSafeCFunction("getUnitsPerPixel", MODNAME, ilua =>
-            {
-                var L = Lua.FromIntPtr(ilua);
-                float plane = (float)L.ToNumber(1);
-
-                L.PushVec3(new(camera.GetUnitsPerPixel(plane),0));
-
-                return 1;
-            });
-
-            lua.NewTable();
-
-            lua.PushSafeCFunction("__index", MODNAME, ilua =>
-            {
-                var L = Lua.FromIntPtr(ilua);
-                string key = L.ToString(2);
-                switch (key)
-                {
-                    case "position":
-                        L.PushVec3(camera.Position);
-                        return 1;
-                    case "rotation":
-                        L.PushVec3(camera.Rotation);
-                        return 1;
-                    case "forward":
-                        L.PushVec3(camera.Forward);
-                        return 1;
-                    case "right":
-                        L.PushVec3(camera.Right);
-                        return 1;
-                    case "up":
-                        L.PushVec3(camera.Up);
-                        return 1;
-                    case "orthographic":
-                        L.PushBoolean(camera.Orthographic);
-                        return 1;
-                    case "orthoSize":
-                        L.PushNumber(camera.OrthographicSize);
-                        return 1;
-                    case "fov":
-                        L.PushNumber(camera.FieldOfView * (180f / MathF.PI));
-                        return 1;
-                    default:
-                        L.PushNil();
-                        return 1;
-                }
-            });
-
-            lua.PushSafeCFunction("__newindex", MODNAME, ilua =>
-            {
-                var L = Lua.FromIntPtr(ilua);
-                string key = L.ToString(2);
-                switch (key)
-                {
-                    case "position":
-                        camera.Position = L.ToVec3(3);
-                        break;
-                    case "rotation":
-                        camera.Rotation = L.ToVec3(3);
-                        break;
-                    case "orthographic":
-                        camera.Orthographic = L.ToBoolean(3);
-                        break;
-                    case "orthoSize":
-                        camera.OrthographicSize = (float)L.ToNumber(3);
-                        break;
-                    case "fov":
-                        camera.FieldOfView = (float)L.ToNumber(3) * (MathF.PI / 180f);
-                        break;
-                }
-                return 0;
-            });
-
-            lua.SetMetaTable(-2);
         }
     }
 }

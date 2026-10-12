@@ -1,5 +1,4 @@
-﻿using Assimp;
-using RmlUiNet;
+﻿using RmlUiNet;
 using KumaEngine.Rendering;
 using KumaEngine.Rendering.VertexTypes;
 using System;
@@ -12,10 +11,13 @@ using Veldrid;
 using Vulkan;
 using static System.Net.Mime.MediaTypeNames;
 
+
 namespace KumaEngine.UI
 {
     public class KumaUiRenderInterface(Game g,KumaPipeline pipeline,CommandList cl) : RenderInterface
     {
+        public static Camera RenderCamera = null!;
+
         Dictionary<nint, KumaMaterial> UITextures = new();
         Dictionary<nint, Model> Geometry = new();
 
@@ -152,7 +154,7 @@ namespace KumaEngine.UI
                 fixed (byte* b = i) GenerateTextureID(b, i.Length,new(1,1),0);
             }
 
-            pipeline.Draw(cl, Geometry[geometry], UITextures[texture]);
+            pipeline.Draw(cl, RenderCamera, Geometry[geometry], UITextures[texture]);
         }
         public override void ReleaseGeometry(nint geometry)
         {

@@ -74,6 +74,14 @@ namespace KumaEngine.Rendering
             Resize(factory);
         }
 
+        public void SetSizeExpressions(ResourceFactory factory,string w, string h)
+        {
+            _result.Width = w;
+            _result.Height = h;
+
+            Resize(factory);
+        }
+
         public void Resize(ResourceFactory factory)
         {
             if (!SupportsResizing) return;

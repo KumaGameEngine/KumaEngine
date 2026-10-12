@@ -140,6 +140,10 @@
           "type": "boolean",
           "default": true
         },
+        "UseLights": {
+          "type": "boolean",
+          "default": false
+        },
         "Uniforms": {
           "type": "object",
           "default": {},
@@ -160,8 +164,7 @@
         "ObjectModelMatrix",
         "SamplerCube",
         "Sampler2D",
-        "Sampler3D",
-        "Lights"
+        "Sampler3D"
       ]
     },
     "ComparisonKind": {

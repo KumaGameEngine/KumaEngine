@@ -4,6 +4,7 @@
 */
 
 using Assimp;
+using KumaEngine.API;
 using KumaEngine.OpenAL;
 using KumaEngine.OpenAL.Source;
 using System;
@@ -33,8 +34,10 @@ namespace KumaEngine.Rendering
         private Vector3 _lookDirection = new Vector3(0, -.3f, -1f);
         private float _moveSpeed = 10.0f;
 
-        private float _windowWidth;
-        private float _windowHeight;
+        public float WindowWidth { get; private set; }
+        public float WindowHeight { get; private set; }
+
+        public string DefaultSwapchain = null!;
 
         public event Action<Matrix4x4> ProjectionChanged;
         public event Action<Matrix4x4> ViewChanged;
@@ -49,14 +52,14 @@ namespace KumaEngine.Rendering
             }
         }
 
-        public Camera(float width, float height,ResourceFactory factory)
+        public Camera(ResourceFactory factory)
         {
-            _windowWidth = width;
-            _windowHeight = height;
-
-            UpdatePerspectiveMatrix();
+            SwapchainUpdated();
             UpdateViewMatrix();
         }
+
+        public CameraClearMode ClearMode { get; set; } = CameraClearMode.Skybox;
+        public bool Enabled { get; set; } = false;
 
         public Matrix4x4 ViewMatrix => _viewMatrix;
         public Matrix4x4 ProjectionMatrix => _projectionMatrix;
@@ -71,7 +74,7 @@ namespace KumaEngine.Rendering
         public float OrthographicSize { get => _refdist; set { _refdist = value; } }
         public float NearDistance { get => _near; set { _near = value; UpdatePerspectiveMatrix(); } }
 
-        public float AspectRatio => _windowWidth / _windowHeight;
+        public float AspectRatio => WindowWidth / WindowHeight;
 
         public float MoveSpeed { get => _moveSpeed; set => _moveSpeed = value; }
         public Vector3 Forward => GetLookDir();
@@ -90,6 +93,14 @@ namespace KumaEngine.Rendering
 
         public void Update(CommandList cl)
         {
+
+            var swap = DefaultSwapchain != null ? 
+                KumaPass.SwapChains[DefaultSwapchain].Framebuffer : 
+                DefinitionFile.Game.MainSwapchain.Framebuffer;
+
+            if (swap.Width != WindowWidth || swap.Height != WindowHeight)
+                SwapchainUpdated();
+
             cl.UpdateBuffer(_cameraProjViewBuffer,0, new MatrixPair(_viewMatrix, _projectionMatrix));
             cl.UpdateBuffer(_cameraProjViewInverseBuffer,0, new MatrixPair(Matrix4x4.Invert(_viewMatrix, out var viewInverse) ? viewInverse : _viewMatrix, Matrix4x4.Invert(_projectionMatrix, out var projInverse) ? projInverse : _projectionMatrix));
             cl.UpdateBuffer(_cameraPosBuffer, 0, GetCameraInfo());
@@ -110,10 +121,21 @@ namespace KumaEngine.Rendering
                     : value;
         }
 
-        public void WindowResized(float width, float height)
+        public void SwapchainUpdated()
         {
-            _windowWidth = width;
-            _windowHeight = height;
+            if (DefaultSwapchain == null)
+            {
+                WindowWidth = DefinitionFile.Game.MainSwapchain.Framebuffer.Width;
+                WindowHeight = DefinitionFile.Game.MainSwapchain.Framebuffer.Height;
+            }
+            else
+            {
+                var swap = KumaPass.SwapChains[DefaultSwapchain];
+
+                WindowWidth = swap.Framebuffer.Width;
+                WindowHeight = swap.Framebuffer.Height;
+            }
+
             UpdatePerspectiveMatrix();
         }
 
@@ -125,12 +147,12 @@ namespace KumaEngine.Rendering
                 return;
             }
 
-            _projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(_fov, _windowWidth / _windowHeight, _near, _far);
+            _projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(_fov, WindowWidth / WindowHeight, _near, _far);
             ProjectionChanged?.Invoke(_projectionMatrix);
         }
         private void UpdateOrthoMatrix()
         {
-            float coeff = _windowWidth / _windowHeight;
+            float coeff = WindowWidth / WindowHeight;
             float halfh = MathF.Tan(_fov / 2f) * _refdist;
             float halfw = halfh * coeff;
 
@@ -155,8 +177,8 @@ namespace KumaEngine.Rendering
             }
 
             return new Vector2(
-                worldWidth / _windowWidth,
-                worldHeight / _windowWidth
+                worldWidth / WindowWidth,
+                worldHeight / WindowWidth
             );
         }
 
@@ -175,15 +197,15 @@ namespace KumaEngine.Rendering
 
         public Vector3 ScreenToNdc(Vector3 screenCoord)
         {
-            float x = (2f * screenCoord.X / _windowWidth) - 1f;
-            float y = 1f - (2f * screenCoord.Y / _windowHeight);
+            float x = (2f * screenCoord.X / WindowWidth) - 1f;
+            float y = 1f - (2f * screenCoord.Y / WindowHeight);
             return new Vector3(x, y, screenCoord.Z);
         }
 
         public Vector3 NdcToScreen(Vector3 screenCoord)
         {
-            float x = ((screenCoord.X + 1f) / 2f) * _windowWidth;
-            float y = 1f - ((screenCoord.Y + 1f) / 2f) * _windowHeight;
+            float x = ((screenCoord.X + 1f) / 2f) * WindowWidth;
+            float y = 1f - ((screenCoord.Y + 1f) / 2f) * WindowHeight;
             return new Vector3(x, y, screenCoord.Z);
         }
 
@@ -230,7 +252,7 @@ namespace KumaEngine.Rendering
         public CameraInfo GetCameraInfo() => new CameraInfo
         {
             Position = _position,
-            ScreenSize = new(_windowWidth,_windowHeight)
+            ScreenSize = new(WindowWidth,WindowHeight)
         };
 
         public static Vector3 EulerToDirection(Vector3 vec)
@@ -261,5 +283,11 @@ namespace KumaEngine.Rendering
         public Matrix4x4 First = first;
         public Matrix4x4 Second = second;
         public Matrix4x4 Third = first * second;
+    }
+
+    public enum CameraClearMode
+    {
+        SolidColor,
+        Skybox
     }
 }

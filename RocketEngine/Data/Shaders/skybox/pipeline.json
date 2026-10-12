@@ -16,9 +16,7 @@
 
       "Samplers": {
         "Skybox": "SamplerCube"
-      },
-
-      "Output": "MainSwapchain"
+      }
     }
   ]
 }

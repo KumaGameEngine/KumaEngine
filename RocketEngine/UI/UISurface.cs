@@ -1,5 +1,6 @@
 ﻿using KumaEngine.API;
 using KumaEngine.Input;
+using KumaEngine.Rendering;
 using RmlUiNet;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,8 @@ namespace KumaEngine.UI
         Context ctx;
         ElementDocument doc = null!;
 
+        public Camera Camera;
+
         float keyrepeat = 0;
 
         uint keytriggers = 0;
@@ -36,8 +39,10 @@ namespace KumaEngine.UI
             }
         }
 
-        public UISurface(string name, string rml)
+        public UISurface(string name, string rml, Camera camera)
         {
+            Camera = camera;
+
             ctx = Rml.CreateContext(
                 name,
                 new(
@@ -53,8 +58,6 @@ namespace KumaEngine.UI
 
         public void LoadDocument(string rml)
         {
-            
-
             doc = ctx.LoadDocument(AssetRetriver.FetchAssetPath(AssetKind.UI, rml))!;
             Visible = true;
         }

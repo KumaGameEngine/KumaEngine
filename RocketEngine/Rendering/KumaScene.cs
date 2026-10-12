@@ -1,26 +1,42 @@
-﻿using BulletSharp;
+﻿using Assimp.Unmanaged;
+using BulletSharp;
+using KumaEngine.API;
 using System.Numerics;
 using Veldrid;
 
 namespace KumaEngine.Rendering
 {
-    public class KumaScene
+    public class KumaScene : IDisposable
     {
         public static KumaScene CurrentScene = null!;
-        public static DeviceBuffer PointLightBuffer = null!;
+
+        public static ResourceLayout LightLayout = null!;
+        Dictionary<Camera, DeviceBuffer> LightBuffers = new();
+        Dictionary<Camera, ResourceSet> LightSets = new();
 
         public List<GameObject> GameObjects = new();
         public KumaMaterial SkyboxMat = null!;
         public List<KumaLight> Lights = new();
         public KumaSun Sun = KumaSun.Default;
-        public Camera Camera;
+        public List<Camera> Cameras { get; } = new();
+
+        public bool LightsDirty = true;
 
         public DynamicsWorld World;
         public Vector3 Gravity = new(0,-9.81f,0);
 
+        static KumaScene()
+        {
+            LightLayout = DefinitionFile.Game.ResourceFactory.CreateResourceLayout(
+                new ResourceLayoutDescription(
+                    new ResourceLayoutElementDescription(
+                        "Lights", ResourceKind.UniformBuffer,
+                        ShaderStages.Fragment | ShaderStages.Vertex)));
+        }
+
         public KumaScene(Camera cam)
         {
-            Camera = cam;
+            AddCamera(cam, DefinitionFile.Game.GraphicsDevice, DefinitionFile.Game.ResourceFactory);
 
             var collisionConf = new DefaultCollisionConfiguration();
             var dispatcher = new CollisionDispatcher(collisionConf);
@@ -31,20 +47,26 @@ namespace KumaEngine.Rendering
             World.SetGravity(ref Gravity);
         }
 
-        public static void CreateLightBuffers(ResourceFactory factory)
+        public void AddCamera(Camera cam, GraphicsDevice device, ResourceFactory factory)
         {
-            if (PointLightBuffer == null)
-                PointLightBuffer = factory.CreateBuffer(
-                    new((uint)LightUploadScheme.Size, BufferUsage.Dynamic | BufferUsage.UniformBuffer)
-                );
+            Cameras.Add(cam);
+
+            var buf = factory.CreateBuffer(
+                new((uint)LightUploadScheme.Size, BufferUsage.Dynamic | BufferUsage.UniformBuffer)
+            );
+
+            LightBuffers[cam] = buf;
+            LightSets[cam] = factory.CreateResourceSet(new ResourceSetDescription(LightLayout, buf));
         }
 
-        public static unsafe void UploadLights(GraphicsDevice device)
+        public ResourceSet GetLightSet(Camera cam) => LightSets[cam];
+
+        public unsafe void UploadLights(Camera cam, GraphicsDevice device)
         {
-            var sorted = CurrentScene.Lights
+            var sorted = Lights
                 .OrderByDescending(light =>
                 {
-                    float dist = Vector3.Distance(CurrentScene.Camera.Position, light.Position);
+                    float dist = Vector3.Distance(cam.Position, light.Position);
                     return light.Intensity / dist;
                 })
                 .Take(LightUploadScheme.MAX_POINT_LIGHTS)
@@ -55,16 +77,32 @@ namespace KumaEngine.Rendering
             for (int i = 0; i < sorted.Count; i++)
                 scheme.Lights[i] = sorted[i].reference;
 
-            scheme.Sun = CurrentScene.Sun.reference;
+            scheme.Sun = Sun.reference;
 
-            device.UpdateBuffer(PointLightBuffer, 0, ref scheme);
+            device.UpdateBuffer(LightBuffers[cam], 0, ref scheme);
+        }
+
+        public static void UploadLights(GraphicsDevice device)
+        {
+            foreach (var item in CurrentScene.Cameras)
+                CurrentScene.UploadLights(item, device);
         }
 
         public static void SwitchScene(KumaScene scene,GraphicsDevice device,ResourceFactory factory)
         {
+            scene.LightsDirty = true;
             CurrentScene = scene;
+        }
 
-            CreateLightBuffers(factory);
+        public void Dispose()
+        {
+            DefinitionFile.Game.GraphicsDevice.WaitForIdle();
+
+            foreach (var item in LightSets)
+                item.Value.Dispose();
+
+            foreach (var item in LightBuffers)
+                item.Value.Dispose();
         }
     }
 }

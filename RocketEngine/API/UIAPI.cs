@@ -26,8 +26,9 @@ namespace KumaEngine.API
                 var lua = Lua.FromIntPtr(ilua);
                 var d = lua.ToString(1);
                 var f = lua.ToString(2);
+                var c = lua.ToCamera(3);
 
-                lua.PushUISurface(new UISurface(d, f));
+                lua.PushUISurface(new UISurface(d, f, c));
 
                 return 1;
             })

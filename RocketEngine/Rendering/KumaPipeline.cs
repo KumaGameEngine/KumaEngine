@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using Veldrid;
 using Vortice.Direct3D11;
 using Vulkan;
+using static BulletSharp.DiscreteCollisionDetectorInterface;
 using ResourceSet = Veldrid.ResourceSet;
 
 namespace KumaEngine.Rendering
@@ -120,7 +121,7 @@ namespace KumaEngine.Rendering
             return (definition.GroupCountX, definition.GroupCountY, definition.GroupCountZ);
         }
 
-        public void Draw(CommandList list, Model model, KumaMaterial mat)
+        public void Draw(CommandList list, Camera cam, Model model, KumaMaterial mat)
         {
             var mdl = model.GetCompiledVerticies(
                 DefinitionFile.Game.GraphicsDevice,
@@ -139,6 +140,9 @@ namespace KumaEngine.Rendering
                     list.SetPipeline(item.Pipeline);
                     list.SetComputeResourceSet(0, item.Resources);
 
+                    if (item.definition.UseLights)
+                        list.SetComputeResourceSet(1, KumaScene.CurrentScene.GetLightSet(cam));
+
                     if (mat != null)
                     {
                         var resources = mat.GetCompiledMaterial(
@@ -148,7 +152,7 @@ namespace KumaEngine.Rendering
                         );
 
                         for (int i = 0; i < resources.Count; i++)
-                            list.SetComputeResourceSet((uint)i + 1, resources[i]);
+                            list.SetComputeResourceSet((uint)i + (item.definition.UseLights ? 2u : 1), resources[i]);
                     }
 
                     list.Dispatch(groupsX, groupsY, groupsZ);
@@ -156,14 +160,19 @@ namespace KumaEngine.Rendering
                     continue;
                 }
 
-                if (_previousFB != item.swapchain?.Framebuffer)
+                var rb = item.GetFramebuffer(DefinitionFile.Game.ResourceFactory,cam);
+
+                if (_previousFB != rb)
                 {
-                    list.SetFramebuffer(item.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
-                    _previousFB = item.swapchain?.Framebuffer!;
+                    list.SetFramebuffer(rb ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
+                    _previousFB = rb!;
                 }
 
                 list.SetPipeline(item.Pipeline);
                 list.SetGraphicsResourceSet(0, item.Resources);
+
+                if (item.definition.UseLights)
+                    list.SetGraphicsResourceSet(1, KumaScene.CurrentScene.GetLightSet(cam));
 
                 if (item.definition.UseMaterial && mat != null)
                 {
@@ -174,7 +183,7 @@ namespace KumaEngine.Rendering
                     );
 
                     for (int i = 0; i < resources.Count; i++)
-                        list.SetGraphicsResourceSet((uint)i + 1, resources[i]);
+                        list.SetGraphicsResourceSet((uint)i + (item.definition.UseLights ? 2u : 1), resources[i]);
                 }
 
                 list.SetVertexBuffer(0, mdl);
@@ -184,7 +193,7 @@ namespace KumaEngine.Rendering
             }
         }
 
-        public void Draw(CommandList GraphicsList, CommandList ComputeList, params GameObject[] obj)
+        public void Draw(CommandList GraphicsList, CommandList ComputeList, Camera cam, params GameObject[] obj)
         {
             bool lastPassCompute = false;
 
@@ -227,6 +236,9 @@ namespace KumaEngine.Rendering
                     ComputeList.SetPipeline(pass.Pipeline);
                     ComputeList.SetComputeResourceSet(0, pass.Resources);
 
+                    if (pass.definition.UseLights)
+                        ComputeList.SetComputeResourceSet(1, KumaScene.CurrentScene.GetLightSet(cam));
+
                     KumaMaterial lastBoundMaterial = null!;
                     var sortedObjects = obj.OrderBy(x => x.Material?.GetHashCode() ?? 0);
 
@@ -245,7 +257,7 @@ namespace KumaEngine.Rendering
                             );
 
                             for (int i = 0; i < resources.Count; i++)
-                                    ComputeList.SetComputeResourceSet((uint)i + 1, resources[i]);
+                                    ComputeList.SetComputeResourceSet((uint)i + (pass.definition.UseLights ? 2u : 1), resources[i]);
 
                             lastBoundMaterial = gameObject.Material;
                         }
@@ -256,14 +268,19 @@ namespace KumaEngine.Rendering
                     continue;
                 }
 
-                if (_previousFB != pass.swapchain?.Framebuffer)
+                var rb = pass.GetFramebuffer(DefinitionFile.Game.ResourceFactory, cam);
+
+                if (_previousFB != rb)
                 {
-                    GraphicsList.SetFramebuffer(pass.swapchain?.Framebuffer ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
-                    _previousFB = pass.swapchain?.Framebuffer!;
+                    GraphicsList.SetFramebuffer(rb ?? DefinitionFile.Game.MainSwapchain.Framebuffer);
+                    _previousFB = rb!;
                 }
 
                 GraphicsList.SetPipeline(pass.Pipeline);
                 GraphicsList.SetGraphicsResourceSet(0, pass.Resources);
+
+                if (pass.definition.UseLights)
+                    GraphicsList.SetGraphicsResourceSet(1, KumaScene.CurrentScene.GetLightSet(cam));
 
                 Guid lastBoundGraphicsMaterialId = Guid.Empty;
                 Guid lastBoundModelId = Guid.Empty;
@@ -286,7 +303,7 @@ namespace KumaEngine.Rendering
                         );
 
                         for (int i = 0; i < resources.Count; i++)
-                            GraphicsList.SetGraphicsResourceSet((uint)i + 1, resources[i]);
+                            GraphicsList.SetGraphicsResourceSet((uint)i + (pass.definition.UseLights ? 2u : 1), resources[i]);
 
                         lastBoundGraphicsMaterialId = gameObject.Material.MaterialID;
                     }
@@ -352,6 +369,18 @@ namespace KumaEngine.Rendering
 
         public List<(KumaPass consumer, int bindableIndex)> Consumers { get; private set; } = new();
 
+        public Framebuffer GetFramebuffer(ResourceFactory factory,Camera cam)
+        {
+            if (swapchain != null) return swapchain.Framebuffer;
+
+            if (cam.DefaultSwapchain == null) 
+                return DefinitionFile.Game.MainSwapchain.Framebuffer;
+
+            CheckSwapchain(cam.DefaultSwapchain);
+
+            return SwapChains[cam.DefaultSwapchain].Framebuffer;
+        }
+
         public void EnsureAutoBufferSize(uint totalGroupCount)
         {
             if (AutoBuffers.Count == 0) return;
@@ -362,7 +391,7 @@ namespace KumaEngine.Rendering
 
                 uint newSize = Math.Max(totalGroupCount, 1u) * auto.Stride;
 
-                var newBuffer = Factory.CreateBuffer(new (
+                var newBuffer = Factory.CreateBuffer(new(
                     newSize,
                     auto.ReadWrite ? BufferUsage.StructuredBufferReadWrite : BufferUsage.StructuredBufferReadOnly,
                     auto.Stride
@@ -400,6 +429,12 @@ namespace KumaEngine.Rendering
             IsCompute = true;
         }
 
+        public static void CheckSwapchain(string swp)
+        {
+            if (swp != null && !SwapChains.ContainsKey(swp))
+                SwapChains.Add(swp, new(DefinitionFile.Game.ResourceFactory, swp + ".json"));
+        }
+
         public static KumaPass FromFile(ResourceFactory factory, string set, PassFile result, KumaPipeline pipeline, List<VertexElementDescription> layoutElements)
         {
             List<ResourceLayoutElementDescription> staticResourceLayoutElementDescriptions = new();
@@ -417,7 +452,6 @@ namespace KumaEngine.Rendering
                     case KumaPipelineUniforms.CameraProjView:
                     case KumaPipelineUniforms.CameraProjViewInverse:
                     case KumaPipelineUniforms.ObjectModelMatrix:
-                    case KumaPipelineUniforms.Lights:
                     case KumaPipelineUniforms.CameraPos:
                         staticResourceLayoutElementDescriptions.Add(
                             new ResourceLayoutElementDescription(item.Key, ResourceKind.UniformBuffer, KumaPipeline.STAGE_GLOBAL)
@@ -489,10 +523,12 @@ namespace KumaEngine.Rendering
             ResourceLayoutDescription resourceLayoutDescription = new ResourceLayoutDescription(staticResourceLayoutElementDescriptions.ToArray());
             ResourceLayout sharedLayout = factory.CreateResourceLayout(resourceLayoutDescription);
 
-            if (!SwapChains.ContainsKey(result.Output))
-                SwapChains.Add(result.Output, new(factory, result.Output + ".json"));
+            CheckSwapchain(result.Output);
 
             List<ResourceLayout> layouts = [sharedLayout];
+
+            if (result.UseLights)
+                layouts.Add(KumaScene.LightLayout);
 
             if (dynamicResourceLayoutElementDescriptions.Count > 0)
             {
@@ -511,7 +547,7 @@ namespace KumaEngine.Rendering
 
             ret.definition = result;
 
-            if (result.Type != KumaShaderType.Compute)
+            if (result.Type != KumaShaderType.Compute && result.Output != null)
                 ret.swapchain = SwapChains[result.Output];
 
             ret.Factory = factory;
@@ -536,9 +572,6 @@ namespace KumaEngine.Rendering
                         break;
                     case KumaPipelineUniforms.ObjectModelMatrix:
                         bindableResources.Add(pipeline.ModelBuffer);
-                        break;
-                    case KumaPipelineUniforms.Lights:
-                        bindableResources.Add(KumaScene.PointLightBuffer);
                         break;
                     case KumaPipelineUniforms.CameraPos:
                         bindableResources.Add(Camera._cameraPosBuffer);
@@ -669,6 +702,11 @@ namespace KumaEngine.Rendering
             List<VertexElementDescription> layoutElements
         )
         {
+            var output = DefinitionFile.Game.MainSwapchain.Framebuffer.OutputDescription;
+
+            if (result.Output != null && SwapChains.ContainsKey(result.Output))
+                output = SwapChains[result.Output]?.Framebuffer.OutputDescription ?? output;
+
             return new KumaPass(factory, new GraphicsPipelineDescription()
             {
                 BlendState = BlendStateDescription.SingleAlphaBlend,
@@ -689,7 +727,7 @@ namespace KumaEngine.Rendering
                     vertexLayouts: [new(layoutElements.ToArray())],
                     shaders: Shaders.FromSPIRVVertFrag(factory, set, result.VertexShader, result.FragmentShader)
                 ),
-                Outputs = SwapChains[result.Output]?.Framebuffer.OutputDescription ?? DefinitionFile.Game.MainSwapchain.Framebuffer.OutputDescription
+                Outputs = output
             });
         }
 
@@ -736,7 +774,6 @@ namespace KumaEngine.Rendering
         SamplerCube,
         Sampler2D,
         Sampler3D,
-        Lights,
         NULL
     }
     public enum KumaVertexElement
@@ -765,7 +802,7 @@ namespace KumaEngine.Rendering
 
     public class PassFile
     {
-        public string Output = "MainSwapchain";
+        public string Output = null!;
         public string VertexShader = null!;
         public string FragmentShader = null!;
         public string ComputeShader = null!;
@@ -787,6 +824,7 @@ namespace KumaEngine.Rendering
         public FrontFace FrontFace = FrontFace.CounterClockwise;
         public bool DepthClipEnabled = true;
         public bool ScissorTestEnabled = true;
+        public bool UseLights = false;
 
         [JsonConverter(typeof(OrderedKeyValueConverter<string,string>))]
         public List<(string Key, string Value)> Uniforms = new();

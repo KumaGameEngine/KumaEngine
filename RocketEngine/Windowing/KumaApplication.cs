@@ -57,8 +57,7 @@ namespace KumaEngine.Windowing
 
         protected virtual void HandleWindowResize()
         {
-            if (KumaScene.CurrentScene != null)
-                KumaScene.CurrentScene.Camera.WindowResized(Window.Width, Window.Height);
+            
         }
 
         protected virtual void OnKeyDown(KeyEvent ke) { }
