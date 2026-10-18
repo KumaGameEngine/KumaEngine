@@ -148,9 +148,21 @@
           "type": "object",
           "default": {},
           "additionalProperties": {
-            "$ref": "#/$defs/ComparisonKind"
+            "anyOf": [
+              { "$ref": "#/$defs/RoketPipelineUniforms" },
+              { "$ref": "#/$defs/CustomUniform" },
+              { "$ref": "#/$defs/CustomUniformRef" }
+            ]
           },
           "description": "Maps uniform binding names to their semantic role"
+        },
+        "Samplers": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "$ref": "#/$defs/RoketPipelineSamplers"
+          },
+          "description": "Maps sampler binding names to their semantic role"
         }
       }
     },
@@ -161,7 +173,29 @@
         "CameraProjView",
         "CameraProjViewInverse",
         "CameraPos",
-        "ObjectModelMatrix",
+        "ObjectModelMatrix"
+      ]
+    },
+    "CustomUniform": {
+      "title": "CustomUniform",
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*;(?:ro|rw);(?:[0-9]+|auto)(?:;[0-9]+)?$",
+      "description": "Custom uniform in the form <name>;<access>;<count>|auto;[stride]",
+      "examples": [
+        "Lights;ro;auto",
+        "Particles;rw;1024;32"
+      ]
+    },
+    "CustomUniformRef": {
+      "title": "CustomUniformRef",
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+      "description": "Reference to a custom uniform defined elsewhere by name"
+    },
+    "RoketPipelineSamplers": {
+      "title": "RoketPipelineSamplers",
+      "type": "string",
+      "enum": [
         "SamplerCube",
         "Sampler2D",
         "Sampler3D"
