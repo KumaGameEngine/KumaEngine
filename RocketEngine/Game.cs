@@ -75,9 +75,6 @@ namespace KumaEngine
                     return;
                 }
 
-                foreach (var item in UIAPI.UISurfaceHandles)
-                    item.Value.Resize(Window.Width,Window.Height);
-
                 foreach (var item in KumaPass.SwapChains.Values) 
                     if (item != null) item.Resize(factory);
             };
@@ -173,6 +170,11 @@ namespace KumaEngine
                 if (!item.Value.Camera.Enabled) continue;
 
                 KumaUiRenderInterface.RenderCamera = item.Value.Camera;
+
+                item.Value.Resize(
+                    (uint)item.Value.Camera.WindowWidth, 
+                    (uint)item.Value.Camera.WindowHeight
+                );
 
                 item.Value.Update(deltaSeconds);
                 item.Value.Render();

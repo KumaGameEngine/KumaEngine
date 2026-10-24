@@ -231,7 +231,7 @@ namespace KumaEngine.Rendering
             uint uFace = (uint)faceSize;
 
             Texture deviceTex = factory.CreateTexture(
-                TextureDescription.Texture2D(uFace, uFace, 1, arrayLayers: 6,
+                TextureDescription.Texture2D(uFace, uFace, 1, arrayLayers: 1,
                     format,
                     TextureUsage.Sampled | TextureUsage.Cubemap
                 )
@@ -282,7 +282,7 @@ namespace KumaEngine.Rendering
                 new TextureViewDescription(
                     deviceTex,
                     baseMipLevel: 0, mipLevels: 1,
-                    baseArrayLayer: 0, arrayLayers: 6
+                    baseArrayLayer: 0, arrayLayers: 1
                 )
             );
 

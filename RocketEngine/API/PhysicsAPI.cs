@@ -173,6 +173,16 @@ namespace KumaEngine.API
                 return 0;
             });
 
+            lua.PushSafeCFunction("setAngularFactor", MODNAME, ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+                Vector3 factor = L.ToVec3(1);
+
+                collisonObject.AngularFactor = factor;
+
+                return 0;
+            });
+
             lua.PushSafeCFunction("awake", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
@@ -182,6 +192,7 @@ namespace KumaEngine.API
 
                 return 0;
             });
+
 
             lua.NewTable();
 
@@ -207,7 +218,7 @@ namespace KumaEngine.API
                 string key = L.ToString(2);
 
                 var go = ObjectHandles[handle];
-
+                
                 GameObjectAPI.DecomposeTransform(go.WorldTransform, out var pos, out var euler, out var scale);
 
                 switch (key)
