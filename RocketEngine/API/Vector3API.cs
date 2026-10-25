@@ -63,6 +63,26 @@ namespace KumaEngine.API
                 lua.PushVec3(new Vector3(pitch, yaw, 0) * (180 / MathF.PI));
                 return 1;
             }),
+
+            DefinitionFile.RegisterFunction("one", ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                lua.PushVec3(Vector3.One);
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("zero", ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                lua.PushVec3(Vector3.Zero);
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("single", ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                float x = (float)lua.ToNumber(1);
+                lua.PushVec3(new Vector3(x));
+                return 1;
+            }),
         ];
 
         public static void RegisterMeta(Lua lua)

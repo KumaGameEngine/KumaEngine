@@ -1,4 +1,5 @@
 ﻿using Assimp;
+using BulletSharp;
 using KeraLua;
 using KumaEngine.Rendering;
 using Newtonsoft.Json;
@@ -55,6 +56,8 @@ namespace KumaEngine.API
                 PushEnum<Key>("key");
                 PushEnum<MouseButton>("mouseButton");
                 PushEnum<CameraClearMode>("clearMode");
+                PushEnum<CollisionFlags>("collisionFlags");
+                PushEnum<CollisionFilterGroups>("collisionGroups");
 
                 return 1;
             });

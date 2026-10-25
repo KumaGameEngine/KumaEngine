@@ -1,6 +1,7 @@
 ﻿using Assimp;
 using BulletSharp;
 using KeraLua;
+using KumaEngine.Physics;
 using KumaEngine.Rendering;
 using System;
 using System.Collections.Generic;
@@ -142,7 +143,17 @@ namespace KumaEngine.API
                 var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToCollisonObject(1);
 
-                SceneHandles[handle].World.AddCollisionObject(go);
+                if (go is TriggerCollision tc)
+                {
+                    SceneHandles[handle].World.AddCollisionObject(
+                        go,
+                        CollisionFilterGroups.SensorTrigger,
+                        tc.Group
+                    );
+
+                    SceneHandles[handle].ActiveTriggers.Add(tc);
+                }
+                else SceneHandles[handle].World.AddCollisionObject(go);
 
                 return 1;
             });
@@ -151,6 +162,9 @@ namespace KumaEngine.API
             {
                 var lua = Lua.FromIntPtr(ilua);
                 var go = lua.ToCollisonObject(1);
+
+                if (go is TriggerCollision tc)
+                    SceneHandles[handle].ActiveTriggers.Remove(tc);
 
                 SceneHandles[handle].World.RemoveCollisionObject(go);
 
@@ -204,9 +218,8 @@ namespace KumaEngine.API
                 string key = L.ToString(2);
                 switch (key)
                 {
-                    case "sun":
-                        L.PushSun(SceneHandles[handle].Sun);
-                        return 1;
+                    case "sun": L.PushSun(SceneHandles[handle].Sun); return 1;
+                    case "gravity": L.PushVec3(SceneHandles[handle].Gravity); return 1;
                 }
 
                 var go = SceneHandles[handle].GameObjects.FirstOrDefault(x =>
@@ -226,9 +239,8 @@ namespace KumaEngine.API
                 string key = L.ToString(2);
                 switch (key)
                 {
-                    case "sun":
-                        SceneHandles[handle].Sun = L.ToSun(3);
-                        break;
+                    case "sun": SceneHandles[handle].Sun = L.ToSun(3); break;
+                    case "gravity": SceneHandles[handle].Gravity = L.ToVec3(3); break;
                 }
                 return 0;
             });

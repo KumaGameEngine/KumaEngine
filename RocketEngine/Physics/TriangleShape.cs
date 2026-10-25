@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KumaEngine.Rendering
+namespace KumaEngine.Physics
 {
     public class TriangleMeshShape : BvhTriangleMeshShape
     {

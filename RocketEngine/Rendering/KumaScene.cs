@@ -1,6 +1,7 @@
 ﻿using Assimp.Unmanaged;
 using BulletSharp;
 using KumaEngine.API;
+using KumaEngine.Physics;
 using System.Numerics;
 using Veldrid;
 
@@ -14,6 +15,7 @@ namespace KumaEngine.Rendering
         Dictionary<Camera, DeviceBuffer> LightBuffers = new();
         Dictionary<Camera, ResourceSet> LightSets = new();
 
+        public List<TriggerCollision> ActiveTriggers = new();
         public List<GameObject> GameObjects = new();
         public KumaMaterial SkyboxMat = null!;
         public List<KumaLight> Lights = new();
@@ -45,6 +47,16 @@ namespace KumaEngine.Rendering
 
             World = new DiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConf);
             World.SetGravity(ref Gravity);
+
+            World.Broadphase.OverlappingPairCache.SetInternalGhostPairCallback(new GhostPairCallback());
+
+            World.SetInternalTickCallback(SimulationStepped, null, true);
+        }
+
+        void SimulationStepped(DynamicsWorld world, float step)
+        {
+            foreach (var item in ActiveTriggers)
+                item.HandleCollisions();
         }
 
         public void AddCamera(Camera cam, GraphicsDevice device, ResourceFactory factory)
