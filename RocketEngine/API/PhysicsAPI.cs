@@ -7,6 +7,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using TriangleMeshShape = KumaEngine.Rendering.TriangleMeshShape;
 
 namespace KumaEngine.API
 {
@@ -81,14 +82,15 @@ namespace KumaEngine.API
             {
                 var lua = Lua.FromIntPtr(ilua);
                 Model mdl = lua.ToModel(1);
+                bool quantize = lua.ToBoolean(2);
 
-                Vector3[] vertices = mdl.Vertices.Vertices.ToArray();
                 int[] indices = mdl.Indices.Select(x => (int)x).ToArray();
 
-                var indexVertexArray = new TriangleIndexVertexArray(indices, vertices);
-
                 lua.PushShape(
-                    new BvhTriangleMeshShape(indexVertexArray, true)
+                    TriangleMeshShape.CreateFromTriangleList(
+                        mdl.Vertices.Vertices,
+                        indices, quantize
+                    )
                 );
 
                 return 1;

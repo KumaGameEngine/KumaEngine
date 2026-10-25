@@ -133,6 +133,13 @@ namespace KumaEngine.Rendering
         {
             var ctx = new AssimpContext();
 
+            ctx.SetConfig(
+                new Assimp.Configs.SortByPrimitiveTypeConfig(
+                    PrimitiveType.Line | PrimitiveType.Point
+                )
+            );
+            ctx.SetConfig(new Assimp.Configs.RemoveDegeneratePrimitivesConfig(true));
+
             var p = AssetRetriver.FetchAssetPath(AssetKind.Models, model);
 
             if (!File.Exists(p)) throw new Exception("Invalid model file");
@@ -140,8 +147,10 @@ namespace KumaEngine.Rendering
             Scene s = ctx.ImportFile(
                 p,
                 PostProcessSteps.Triangulate | 
-                PostProcessSteps.OptimizeMeshes | 
-                PostProcessSteps.GenerateSmoothNormals | 
+                PostProcessSteps.OptimizeMeshes |
+                PostProcessSteps.SortByPrimitiveType |
+                PostProcessSteps.FindDegenerates | 
+                PostProcessSteps.GenerateNormals | 
                 PostProcessSteps.CalculateTangentSpace
             );
 
@@ -149,6 +158,9 @@ namespace KumaEngine.Rendering
 
             foreach (var item in s.Meshes)
             {
+                if (item.PrimitiveType != PrimitiveType.Triangle) continue;
+                if (item.FaceCount == 0) continue;
+
                 var mdl = new Model();
                 mdl.Vertices = new() 
                 {
