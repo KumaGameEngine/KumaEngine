@@ -478,6 +478,8 @@ namespace KumaEngine.API
                     case "friction": L.PushNumber(go.Friction); return 1;
                     case "rollingFriction": L.PushNumber(go.RollingFriction); return 1;
                     case "anisotropicFriction": L.PushVec3(go.AnisotropicFriction); return 1;
+                    case "linearVelocity": L.PushVec3(go.LinearVelocity); return 1;
+                    case "angularVelocity": L.PushVec3(go.AngularVelocity); return 1;
                     case "linearDampening": L.PushNumber(go.LinearDamping); return 1;
                     case "angularDampening": L.PushNumber(go.AngularDamping); return 1;
                     case "contactDampening": L.PushNumber(go.ContactDamping); return 1;
@@ -514,6 +516,8 @@ namespace KumaEngine.API
                     case "friction": go.Friction = (float)L.ToNumber(3); return 0;
                     case "rollingFriction": go.RollingFriction = (float)L.ToNumber(3); return 0;
                     case "anisotropicFriction": go.AnisotropicFriction = L.ToVec3(3); return 0;
+                    case "linearVelocity": go.LinearVelocity = L.ToVec3(3); return 0;
+                    case "angularVelocity": go.AngularVelocity = L.ToVec3(3); return 0;
                     case "linearFactor": go.LinearFactor = L.ToVec3(3); return 0;
                     case "angularFactor": go.AngularFactor = L.ToVec3(3); return 0;
                     case "collisonGroup": go.BroadphaseHandle.CollisionFilterGroup = (int)L.ToInteger(3); return 0;
