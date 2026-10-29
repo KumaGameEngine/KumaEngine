@@ -151,7 +151,8 @@ namespace KumaEngine.Rendering
                 PostProcessSteps.SortByPrimitiveType |
                 PostProcessSteps.FindDegenerates | 
                 PostProcessSteps.GenerateNormals | 
-                PostProcessSteps.CalculateTangentSpace
+                PostProcessSteps.CalculateTangentSpace |
+                PostProcessSteps.FlipUVs
             );
 
             List<Model> Models = new();
