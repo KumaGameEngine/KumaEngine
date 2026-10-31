@@ -92,7 +92,7 @@ namespace KumaEngine.Rendering
             if (_viewCache.TryGetValue(defpath, out var cv))
                 return cv;
 
-            //StbImage.stbi_set_flip_vertically_on_load(device.IsUvOriginTopLeft ? 1 : 0);
+            StbImage.stbi_set_flip_vertically_on_load(device.IsUvOriginTopLeft ? 0 : 1);
 
             ImageResult image;
             using (var stream = File.OpenRead(defpath))
