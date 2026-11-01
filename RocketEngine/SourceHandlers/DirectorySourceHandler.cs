@@ -15,16 +15,23 @@ namespace KumaEngine.SourceHandlers
             Directory = dir;
         }
 
-        public string[] ListFiles(AssetKind kind, string relative, string filter = "*.*", bool recursive = false)
-        {
+        public string[] ListFiles(
+            AssetKind kind, string relative, string filter = "*.*",
+            bool recursive = false, bool relativePath = false
+        ){
             var dir = Path.Combine(Directory, kind.ToString(), relative);
 
             if (!System.IO.Directory.Exists(dir)) return [];
 
-            return System.IO.Directory.GetFiles(
+            var files = System.IO.Directory.GetFiles(
                 dir, filter,
                 recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly
-            );
+            ).ToList();
+
+            if (relativePath)
+                files.ForEach(f => f = Path.GetRelativePath(dir, f));
+
+            return files.ToArray();
         }
 
         public Stream OpenFile(string path, FileMode mode, FileAccess access) =>

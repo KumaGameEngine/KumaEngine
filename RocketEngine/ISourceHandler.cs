@@ -11,6 +11,9 @@ namespace KumaEngine
         public bool TryFetchFile(AssetKind kind, string relative, out string path);
         public Stream OpenFile(string path, FileMode mode, FileAccess access);
 
-        public string[] ListFiles(AssetKind kind, string relative, string filter = "*.*", bool recursive = false);
+        public string[] ListFiles(
+            AssetKind kind, string relative, string filter = "*.*", 
+            bool recursive = false, bool relativePath = false
+        );
     }
 }

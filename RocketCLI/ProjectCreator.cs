@@ -14,9 +14,11 @@ namespace KumaCLI
             {
                 new DirectoryElement("Textures"),
                 new DirectoryElement("Models"),
-                new DirectoryElement("UI"),
+                new DirectoryElement("UI", new()
+                {
+                    new DirectoryElement("Fonts"),
+                }),
                 new DirectoryElement("Materials"),
-                new DirectoryElement("Fonts"),
                 new DirectoryElement("Scripts",new()
                 {
                     new FileElement("main.lua",ProjectHelper.GenerateMainFile()),
@@ -24,7 +26,7 @@ namespace KumaCLI
                 }),
                 new DirectoryElement("Shaders"),
             }),
-            new FileElement("rocketConfig.json",ProjectHelper.GenerateProjectFile())
+            new FileElement("kumaConfig.json",ProjectHelper.GenerateProjectFile())
         };
 
         public static void CreateProject(string name)

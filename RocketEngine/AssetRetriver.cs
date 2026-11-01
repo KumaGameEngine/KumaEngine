@@ -8,7 +8,6 @@ namespace KumaEngine
 {
     public enum AssetKind
     {
-        Fonts,
         Materials,
         Models,
         Scripts,
@@ -61,14 +60,16 @@ namespace KumaEngine
         public static string ReadAlltext(AssetKind kind, string relative) =>
             Encoding.Default.GetString(ReadAllBytes(kind, relative));
 
-        public static string[] GetFiles(AssetKind kind, string relative,string filter = "*.*", bool recursive = false)
-        {
+        public static string[] GetFiles(
+            AssetKind kind, string relative, string filter = "*.*", 
+            bool recursive = false, bool relativePath = false
+        ){
             SourceThrow();
 
             List<string> files = new();
 
             foreach (var item in Sources)
-                files.AddRange(item.ListFiles(kind, relative, filter, recursive));
+                files.AddRange(item.ListFiles(kind, relative, filter, recursive, relativePath));
 
             return files.ToArray();
         }

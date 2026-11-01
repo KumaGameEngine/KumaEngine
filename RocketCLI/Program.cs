@@ -1,6 +1,7 @@
 ﻿using KumaEngine;
 using KumaEngine.SourceHandlers;
 using KumaEngine.Windowing;
+using Newtonsoft.Json;
 using System.Reflection;
 
 namespace KumaCLI
@@ -59,11 +60,69 @@ namespace KumaCLI
                         return;
                     }
 
-                    AssetRetriver.AddAssetSource(
-                        new DirectorySourceHandler(
-                            Path.Combine(Environment.CurrentDirectory, "Data")
-                        )
-                    );
+                    var sources = JsonConvert.DeserializeObject<ProjectFile>(File.ReadAllText("kumaConfig.json"));
+
+                    foreach (var item in sources.Sources)
+                    {
+                        switch (item.Kind)
+                        {
+                            case AssetSourceKind.Directory:
+                                AssetRetriver.AddAssetSource(
+                                    new DirectorySourceHandler(
+                                        Path.GetFullPath(item.Path)
+                                    )
+                                );
+                                break;
+                            case AssetSourceKind.PackFile:
+                                AssetRetriver.AddAssetSource(
+                                    new RePakSourceHandler(
+                                        Path.GetFullPath(item.Path),
+                                        item.PackKey.Length > 0 ? item.PackKey : sources.DefaultPackKey
+                                    )
+                                );
+                                break;
+                            case AssetSourceKind.GenericGroup:
+                                foreach (var item1 in Directory.GetDirectories(item.Path))
+                                {
+                                    AssetRetriver.AddAssetSource(
+                                        new DirectorySourceHandler(
+                                            Path.GetFullPath(item1)
+                                        )
+                                    );
+                                }
+                                foreach (var item1 in Directory.GetFiles(item.Path, "*.pak", SearchOption.AllDirectories))
+                                {
+                                    AssetRetriver.AddAssetSource(
+                                        new RePakSourceHandler(
+                                            Path.GetFullPath(item1),
+                                            item.PackKey.Length > 0 ? item.PackKey : sources.DefaultPackKey
+                                        )
+                                    );
+                                }
+                                break;
+                            case AssetSourceKind.DirectoryGroup:
+                                foreach (var item1 in Directory.GetDirectories(item.Path))
+                                {
+                                    AssetRetriver.AddAssetSource(
+                                        new DirectorySourceHandler(
+                                            Path.GetFullPath(item1)
+                                        )
+                                    );
+                                }
+                                break;
+                            case AssetSourceKind.PackFileGroup:
+                                foreach (var item1 in Directory.GetFiles(item.Path, "*.pak", SearchOption.AllDirectories))
+                                {
+                                    AssetRetriver.AddAssetSource(
+                                        new RePakSourceHandler(
+                                            Path.GetFullPath(item1),
+                                            item.PackKey.Length > 0 ? item.PackKey : sources.DefaultPackKey
+                                        )
+                                    );
+                                }
+                                break;
+                        }
+                    }
 
                     AssetRetriver.AddAssetSource(
                         new DirectorySourceHandler(

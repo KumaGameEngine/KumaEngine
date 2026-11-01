@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,20 +9,28 @@ namespace KumaCLI
 {
     public static class ProjectHelper
     {
-        public static bool IsGameDirectory() => File.Exists("rocketConfig.json");
+        public static bool IsGameDirectory() => File.Exists("kumaConfig.json");
         public static string GenerateEngineFile()
         {
-            return "";
+            HttpClient client = new();
+            return client.GetStringAsync(
+                "https://raw.githubusercontent.com/KumaGameEngine/Docs/refs/heads/main/source/engine.lua"
+            ).GetAwaiter().GetResult();
         }
 
         public static string GenerateMainFile()
         {
             return "local engine = require(\"engine\");";
         }
-        public static string GenerateProjectFile()
+        public static string GenerateProjectFile() => JsonConvert.SerializeObject(new ProjectFile()
         {
-            return "{}";
-        }
+            Sources = [
+                new() {
+                    Kind = AssetSourceKind.Directory,
+                    Path = "./Data"
+                }
+            ]
+        }, Formatting.Indented);
 
         public static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
         {

@@ -60,8 +60,8 @@ namespace KumaEngine
             Rml.SetSystemInterface(new KumaSystemInterface());
             Rml.Initialise();
 
-            foreach (var item in AssetRetriver.GetFiles(AssetKind.Fonts,"", "*.ttf"))
-                Rml.LoadFontFace(item);
+            foreach (var item in AssetRetriver.GetFiles(AssetKind.UI, "Fonts", "*.ttf", true, true))
+                Rml.LoadFontFace(Path.Combine("Fonts", item));
 
             bool first = true;
 
