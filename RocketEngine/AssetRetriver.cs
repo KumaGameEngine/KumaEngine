@@ -21,11 +21,9 @@ namespace KumaEngine
 
     public static class AssetRetriver
     {
-        static List<string> Sources = new();
+        static List<ISourceHandler> Sources = new();
 
-        static Dictionary<string, string> FileFetchCache = new();
-
-        public static void AddAssetSource(string source) => Sources.Add(source);
+        public static void AddAssetSource(ISourceHandler source) => Sources.Add(source);
 
         static void SourceThrow()
         {
@@ -33,68 +31,44 @@ namespace KumaEngine
                 throw new Exception("No asset sources defined. Cannot retrive assets");
         }
 
-        public static string FetchAssetPath(AssetKind kind, string relative)
+        public static Stream OpenFile(AssetKind kind, string relative, FileMode mode, FileAccess access)
         {
-            SourceThrow();
-
-            var rpath = Path.Combine("Data", kind.ToString(), relative);
-
-            if (FileFetchCache.TryGetValue(rpath, out var op))
-                return op;
-
             foreach (var item in Sources)
             {
-                var path = Path.Combine(item, rpath);
-                if (File.Exists(path))
-                {
-                    FileFetchCache.Add(rpath, path);
-                    return path;
-                }
+                if (item.TryFetchFile(kind, relative, out var p))
+                    return item.OpenFile(p, mode, access);
             }
 
-            throw new FileNotFoundException($"No defined asset source contains {relative}");
+            throw new FileNotFoundException($"Could not find '{Path.Combine(kind.ToString(), relative)}'");
         }
+
+        public static Stream OpenRead(AssetKind kind, string relative) => 
+            OpenFile(kind, relative, FileMode.Open, FileAccess.Read);
+
+        public static byte[] ReadAllBytes(AssetKind kind, string relative)
+        {
+            var stream = OpenRead(kind, relative);
+
+            byte[] buff = new byte[stream.Length];
+
+            stream.ReadExactly(buff);
+
+            stream.Close();
+
+            return buff;
+        }
+
+        public static string ReadAlltext(AssetKind kind, string relative) =>
+            Encoding.Default.GetString(ReadAllBytes(kind, relative));
 
         public static string[] GetFiles(AssetKind kind, string relative,string filter = "*.*", bool recursive = false)
         {
             SourceThrow();
 
             List<string> files = new();
-            var rpath = Path.Combine("Data", kind.ToString(), relative);
 
             foreach (var item in Sources)
-            {
-                var path = Path.Combine(item, rpath);
-
-                if (Directory.Exists(path)) files.AddRange(
-                    Directory.GetFiles(
-                        path,filter,
-                        recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly
-                    )
-                );
-            }
-
-            return files.ToArray();
-        }
-
-        public static string[] GetDirectories(AssetKind kind, string relative, string filter = "*", bool recursive = false)
-        {
-            SourceThrow();
-
-            List<string> files = new();
-            var rpath = Path.Combine("Data", kind.ToString(), relative);
-
-            foreach (var item in Sources)
-            {
-                var path = Path.Combine(item, rpath);
-
-                if (Directory.Exists(path)) files.AddRange(
-                    Directory.GetDirectories(
-                        path, filter,
-                        recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly
-                    )
-                );
-            }
+                files.AddRange(item.ListFiles(kind, relative, filter, recursive));
 
             return files.ToArray();
         }

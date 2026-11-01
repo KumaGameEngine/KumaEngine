@@ -89,11 +89,10 @@ namespace KumaEngine.Rendering
                 Converters = [new StringEnumConverter()]
             };
 
-            var defpath = AssetRetriver.FetchAssetPath(AssetKind.Shaders, Path.Combine(set, "pipeline.json"));
-
-            if (!File.Exists(defpath)) throw new Exception("Could not find pipeline definition file");
-
-            var result = JsonConvert.DeserializeObject<PipelineFile>(File.ReadAllText(defpath), settings);
+            var result = JsonConvert.DeserializeObject<PipelineFile>(
+                AssetRetriver.ReadAlltext(AssetKind.Shaders, Path.Combine(set, "pipeline.json")),
+                settings
+            );
 
             List<VertexElementDescription> layoutElements = new();
             foreach (var item in result.VertexDefinition)

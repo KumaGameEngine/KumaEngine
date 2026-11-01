@@ -140,12 +140,11 @@ namespace KumaEngine.Rendering
             );
             ctx.SetConfig(new Assimp.Configs.RemoveDegeneratePrimitivesConfig(true));
 
-            var p = AssetRetriver.FetchAssetPath(AssetKind.Models, model);
+            var stream = AssetRetriver.OpenRead(AssetKind.Models, model);
 
-            if (!File.Exists(p)) throw new Exception("Invalid model file");
+            Scene s = ctx.ImportFileFromStream(
+                stream,
 
-            Scene s = ctx.ImportFile(
-                p,
                 PostProcessSteps.Triangulate | 
                 PostProcessSteps.OptimizeMeshes |
                 PostProcessSteps.SortByPrimitiveType |
@@ -176,6 +175,8 @@ namespace KumaEngine.Rendering
 
                 Models.Add(mdl);
             }
+
+            stream.Close();
 
             return Models;
         }

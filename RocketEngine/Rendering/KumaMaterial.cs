@@ -164,11 +164,10 @@ namespace KumaEngine.Rendering
                 Converters = [ new StringEnumConverter() ]
             };
 
-            var defpath = AssetRetriver.FetchAssetPath(AssetKind.Materials, set + ".json");
-
-            if (!File.Exists(defpath)) throw new Exception("Could not find material definition file");
-
-            var result = JsonConvert.DeserializeObject<MaterialFile>(File.ReadAllText(defpath), settings);
+            var result = JsonConvert.DeserializeObject<MaterialFile>(
+                AssetRetriver.ReadAlltext(AssetKind.Materials, set + ".json"), 
+                settings
+            );
 
             KumaMaterial material = new();
 

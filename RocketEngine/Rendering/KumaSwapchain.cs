@@ -66,11 +66,11 @@ namespace KumaEngine.Rendering
                 Converters = [new StringEnumConverter()]
             };
 
-            var defpath = AssetRetriver.FetchAssetPath(AssetKind.Swapchains, definitionFile);
+            _result = JsonConvert.DeserializeObject<SwapchainFile>(
+                AssetRetriver.ReadAlltext(AssetKind.Swapchains, definitionFile), 
+                settings
+            );
 
-            if (!File.Exists(defpath)) throw new Exception("Could not find swapchain definition file");
-
-            _result = JsonConvert.DeserializeObject<SwapchainFile>(File.ReadAllText(defpath), settings);
             Resize(factory);
         }
 

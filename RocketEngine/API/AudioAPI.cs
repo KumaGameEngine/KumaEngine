@@ -51,7 +51,7 @@ namespace KumaEngine.API
 
                 lua.PushAudioStream(
                     WavDecoder.Decode(
-                        AssetRetriver.FetchAssetPath(AssetKind.Audio,d + ".wav")
+                        AssetRetriver.OpenRead(AssetKind.Audio,d + ".wav")
                     )
                 );
 

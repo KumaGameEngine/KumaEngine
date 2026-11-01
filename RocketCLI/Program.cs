@@ -1,4 +1,5 @@
 ﻿using KumaEngine;
+using KumaEngine.SourceHandlers;
 using KumaEngine.Windowing;
 using System.Reflection;
 
@@ -58,8 +59,20 @@ namespace KumaCLI
                         return;
                     }
 
-                    AssetRetriver.AddAssetSource(Environment.CurrentDirectory);
-                    AssetRetriver.AddAssetSource(Path.GetDirectoryName(Environment.ProcessPath)!);
+                    AssetRetriver.AddAssetSource(
+                        new DirectorySourceHandler(
+                            Path.Combine(Environment.CurrentDirectory, "Data")
+                        )
+                    );
+
+                    AssetRetriver.AddAssetSource(
+                        new DirectorySourceHandler(
+                            Path.Combine(
+                                Path.GetDirectoryName(Environment.ProcessPath)!, 
+                                "Data"
+                            )
+                        )
+                    );
 
                     SdlWindow window = new SdlWindow("KumaCLI debug");
                     Game instance = new Game(window);

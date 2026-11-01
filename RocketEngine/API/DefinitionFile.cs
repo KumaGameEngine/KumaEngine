@@ -63,7 +63,7 @@ namespace KumaEngine.API
             });
             lua.Pop(2);
 
-            if (lua.DoFile(AssetRetriver.FetchAssetPath(AssetKind.Scripts,"main.lua")))
+            if (lua.DoString(AssetRetriver.ReadAlltext(AssetKind.Scripts,"main.lua")))
             {
                 string errorMsg = lua.ToString(-1);
                 Console.WriteLine($"Detected a Lua exception: {errorMsg}");

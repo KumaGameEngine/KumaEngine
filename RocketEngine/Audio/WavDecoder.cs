@@ -11,9 +11,8 @@ namespace KumaEngine.Audio
 {
     public static class WavDecoder
     {
-        public static AudioStream Decode(string path)
+        public static AudioStream Decode(Stream stream)
         {
-            using var stream = File.OpenRead(path);
             using var reader = new BinaryReader(stream);
 
             string chunkId = new string(reader.ReadChars(4));

@@ -11,7 +11,7 @@ namespace KumaEngine.UI
 {
     public class KumaFileInterface : FileInterface
     {
-        Dictionary<nint, FileStream> pinnedStreams = new();
+        Dictionary<nint, Stream> pinnedStreams = new();
 
         public override void Close(nint file)
         {
@@ -31,12 +31,12 @@ namespace KumaEngine.UI
 
         public override string LoadFile(string path)
         {
-            return File.ReadAllText(AssetRetriver.FetchAssetPath(AssetKind.UI, path));
+            return AssetRetriver.ReadAlltext(AssetKind.UI, path);
         }
 
         public override nint Open(string path)
         {
-            var fs = File.OpenRead(AssetRetriver.FetchAssetPath(AssetKind.UI, path));
+            var fs = AssetRetriver.OpenRead(AssetKind.UI, path);
             var pin = (nint)Random.Shared.Next(0,int.MaxValue);
 
             pinnedStreams.Add(pin,fs);

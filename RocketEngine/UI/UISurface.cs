@@ -58,7 +58,7 @@ namespace KumaEngine.UI
 
         public void LoadDocument(string rml)
         {
-            doc = ctx.LoadDocument(AssetRetriver.FetchAssetPath(AssetKind.UI, rml))!;
+            doc = ctx.LoadDocumentFromMemory(AssetRetriver.ReadAlltext(AssetKind.UI, rml), Path.Combine("UI", rml))!;
             Visible = true;
         }
 

@@ -1,4 +1,5 @@
-﻿using StbImageSharp;
+﻿using Org.BouncyCastle.Utilities.Zlib;
+using StbImageSharp;
 using System;
 using System.IO;
 using System.Numerics;
@@ -18,17 +19,17 @@ namespace KumaEngine.Rendering
 
         public static Vector2 GetSize(string file)
         {
-            var defpath = AssetRetriver.FetchAssetPath(AssetKind.Textures, file);
-
-            if (_viewCache.TryGetValue(defpath, out var cv))
+            if (_viewCache.TryGetValue(file, out var cv))
                 return new(cv.Target.Width, cv.Target.Height);
 
-            ImageResult image;
-            using (var stream = File.OpenRead(defpath))
-                image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
+            var defpath = AssetRetriver.OpenRead(AssetKind.Textures, file);
+
+            ImageResult image = ImageResult.FromStream(defpath, ColorComponents.RedGreenBlueAlpha);
 
             uint width = (uint)image.Width;
             uint height = (uint)image.Height;
+
+            defpath.Close();
 
             return new(width,height);
         }
@@ -87,16 +88,14 @@ namespace KumaEngine.Rendering
 
         public static TextureView ViewFromFile(GraphicsDevice device, ResourceFactory factory, string file, PixelFormat format = PixelFormat.R8_G8_B8_A8_UNorm_SRgb)
         {
-            var defpath = AssetRetriver.FetchAssetPath(AssetKind.Textures, file);
-
-            if (_viewCache.TryGetValue(defpath, out var cv))
+            if (_viewCache.TryGetValue(file, out var cv))
                 return cv;
+
+            var defpath = AssetRetriver.OpenRead(AssetKind.Textures, file);
 
             StbImage.stbi_set_flip_vertically_on_load(device.IsUvOriginTopLeft ? 0 : 1);
 
-            ImageResult image;
-            using (var stream = File.OpenRead(defpath))
-                image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
+            ImageResult image = ImageResult.FromStream(defpath, ColorComponents.RedGreenBlueAlpha);
 
             uint width = (uint)image.Width;
             uint height = (uint)image.Height;
@@ -148,7 +147,9 @@ namespace KumaEngine.Rendering
 
             var view = factory.CreateTextureView(deviceTex);
 
-            _viewCache.Add(defpath,view);
+            _viewCache.Add(file, view);
+
+            defpath.Close();
 
             return view;
         }
@@ -156,14 +157,12 @@ namespace KumaEngine.Rendering
         public static TextureView CubemapFromFile(
             GraphicsDevice device, ResourceFactory factory, string file, PixelFormat format = PixelFormat.R8_G8_B8_A8_UNorm_SRgb)
         {
-            var path = AssetRetriver.FetchAssetPath(AssetKind.Textures, file);
-
-            if (_viewCache.TryGetValue(path, out var cv))
+            if (_viewCache.TryGetValue(file, out var cv))
                 return cv;
 
-            ImageResult image;
-            using (var stream = File.OpenRead(path))
-                image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
+            var path = AssetRetriver.OpenRead(AssetKind.Textures, file);
+
+            ImageResult image = ImageResult.FromStream(path, ColorComponents.RedGreenBlueAlpha);
 
             int faceSize;
             (int x, int y)[] faces;
@@ -288,7 +287,9 @@ namespace KumaEngine.Rendering
                 )
             );
 
-            _viewCache.Add(path, view);
+            _viewCache.Add(file, view);
+
+            path.Close();
 
             return view;
         }
