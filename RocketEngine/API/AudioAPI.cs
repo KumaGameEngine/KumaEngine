@@ -51,7 +51,7 @@ namespace KumaEngine.API
 
                 lua.PushAudioStream(
                     WavDecoder.Decode(
-                        AssetRetriver.OpenRead(AssetKind.Audio,d + ".wav")
+                        AssetRetriver.OpenRead(AssetKind.Audio,d)
                     )
                 );
 
@@ -105,6 +105,17 @@ namespace KumaEngine.API
                 var pos = L.ToVec3(1);
 
                 AudioStreamHandles[handle].Pause();
+
+                return 1;
+            });
+
+            lua.PushSafeCFunction("resume", MODNAME, ilua =>
+            {
+                var L = Lua.FromIntPtr(ilua);
+
+                var pos = L.ToVec3(1);
+
+                AudioStreamHandles[handle].Resume();
 
                 return 1;
             });

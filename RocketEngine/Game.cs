@@ -9,6 +9,7 @@ using KumaEngine.UI;
 using KumaEngine.Windowing;
 using RmlUiNet;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using Veldrid;
 
@@ -28,6 +29,8 @@ namespace KumaEngine
 
         protected override void CreateResources(ResourceFactory factory)
         {
+            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+
             DefinitionFile.Game = this;
 
             var dev = new ALDevice(null!);

@@ -13,7 +13,7 @@ namespace KumaEngine.Audio
     {
         public static AudioStream Decode(Stream stream)
         {
-            using var reader = new BinaryReader(stream);
+            var reader = new BinaryReader(stream);
 
             string chunkId = new string(reader.ReadChars(4));
             if (chunkId != "RIFF") throw new InvalidDataException("Invalid RIFF header");
@@ -25,7 +25,8 @@ namespace KumaEngine.Audio
             ushort channels = 1;
             int sampleRate = 44100;
             ushort bitsPerSample = 16;
-            byte[] pcm = [];
+            long pcmStart = 0;
+            uint pcmLenght = 0;
 
             while (stream.Position < stream.Length)
             {
@@ -45,20 +46,15 @@ namespace KumaEngine.Audio
                 }
                 else if (subChunkId == "data")
                 {
-                    pcm = reader.ReadBytes((int)subChunkSize);
+                    pcmStart = (uint)stream.Position;
+                    pcmLenght = subChunkSize;
+
                     break;
                 }
                 else stream.Seek(subChunkSize, SeekOrigin.Current);
             }
 
-            uint buffer = AL.GenBuffer();
-            AL.BufferData<byte>(buffer, GetAudioFormat(channels,bitsPerSample), pcm, sampleRate);
-
-            uint source = AL.GenSource();
-
-            AL.SetSource(source, ALSourceInteger.Buffer, (int)buffer);
-
-            return new(source);
+            return new(GetAudioFormat(channels, bitsPerSample), sampleRate, reader, pcmStart, pcmLenght);
         }
 
         static ALFormat GetAudioFormat(ushort channels, ushort bitsPerSample)

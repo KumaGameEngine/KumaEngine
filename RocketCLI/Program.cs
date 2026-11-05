@@ -3,6 +3,7 @@ using KumaEngine.SourceHandlers;
 using KumaEngine.Windowing;
 using Newtonsoft.Json;
 using System.Reflection;
+using System.Runtime;
 
 namespace KumaCLI
 {
@@ -10,6 +11,8 @@ namespace KumaCLI
     {
         static void Main(string[] args)
         {
+            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+
             var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath);
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             var rocketversion = typeof(Game).Assembly.GetName().Version;
