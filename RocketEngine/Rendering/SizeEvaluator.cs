@@ -30,6 +30,13 @@ public static class SizeEvaluator
         return EvaluateMath(mathExpression);
     }
 
+    public static bool IsDynamicExpression(string expression)
+    {
+        if (string.IsNullOrWhiteSpace(expression)) return false;
+        string Cleaned = expression.Replace(" ", "");
+        return Cleaned.Contains("%") || Cleaned.Contains("vw") || Cleaned.Contains("vh");
+    }
+
     private static double ParseUnit(string token, uint relative)
     {
         if (string.IsNullOrEmpty(token)) return 0;

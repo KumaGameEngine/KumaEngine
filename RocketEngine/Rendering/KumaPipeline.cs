@@ -581,7 +581,7 @@ namespace KumaEngine.Rendering
                         if (tex.Value != null)
                         {
                             bindableResources.Add(tex.Value.Attachments[item.Value]);
-                            bindableResources.Add(DefinitionFile.Game.GraphicsDevice.Aniso4xSampler);
+                            bindableResources.Add(DefinitionFile.Game.GraphicsDevice.LinearSampler);
 
                             continue;
                         }
@@ -703,7 +703,7 @@ namespace KumaEngine.Rendering
         {
             var output = DefinitionFile.Game.MainSwapchain.Framebuffer.OutputDescription;
 
-            if (result.Output != null && SwapChains.ContainsKey(result.Output))
+            if (result.Output != null && SwapChains.ContainsKey(result.Output) && SwapChains[result.Output]?.Framebuffer != null)
                 output = SwapChains[result.Output]?.Framebuffer.OutputDescription ?? output;
 
             return new KumaPass(factory, new GraphicsPipelineDescription()

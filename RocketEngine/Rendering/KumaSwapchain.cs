@@ -28,7 +28,7 @@ namespace KumaEngine.Rendering
         Texture _DepthTexture = null!;
         SwapchainFile _result;
 
-        public bool SupportsResizing { get; } = true;
+        public bool SupportsResizing { get; private set; } = true;
 
         public static KumaSwapchain FromVeldrid(ResourceFactory factory,Swapchain swapchain,string name)
         {
@@ -72,6 +72,9 @@ namespace KumaEngine.Rendering
             );
 
             Resize(factory);
+
+            if (!SizeEvaluator.IsDynamicExpression(_result.Width) && !SizeEvaluator.IsDynamicExpression(_result.Height))
+                SupportsResizing = false;
         }
 
         public void SetSizeExpressions(ResourceFactory factory,string w, string h)
@@ -79,7 +82,12 @@ namespace KumaEngine.Rendering
             _result.Width = w;
             _result.Height = h;
 
+            SupportsResizing = true;
+
             Resize(factory);
+
+            if (!SizeEvaluator.IsDynamicExpression(_result.Width) && !SizeEvaluator.IsDynamicExpression(_result.Height))
+                SupportsResizing = false;
         }
 
         public void Resize(ResourceFactory factory)
@@ -93,6 +101,8 @@ namespace KumaEngine.Rendering
 
             foreach (var item in _colorTextures) item.Dispose();
             _colorTextures.Clear();
+
+            ClearColorIDS.Clear();
 
             _DepthTexture?.Dispose();
 

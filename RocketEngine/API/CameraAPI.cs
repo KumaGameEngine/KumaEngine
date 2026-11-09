@@ -188,6 +188,9 @@ namespace KumaEngine.API
                     case "enabled":
                         camera.Enabled = L.ToBoolean(3);
                         break;
+                    case "postProcessingPipeline":
+                        camera.PostProcessingPipeline = L.IsNil(3) ? null! : L.ToPipeline(3);
+                        break;
                 }
                 return 0;
             });

@@ -67,6 +67,8 @@ namespace KumaEngine.Rendering
         public Vector3 Position { get => _position; set { _position = value; UpdateViewMatrix();  } }
         public Vector3 Rotation { get => _rotation; set { _rotation = value; UpdateViewMatrix(); } }
 
+        public KumaPipeline PostProcessingPipeline { get; set; } = null!;
+
         Vector3 _rotationRadians => Rotation * (MathF.PI / 180f);
 
         public float FarDistance { get => _far; set { _far = value; UpdatePerspectiveMatrix(); } }
@@ -252,7 +254,9 @@ namespace KumaEngine.Rendering
         public CameraInfo GetCameraInfo() => new CameraInfo
         {
             Position = _position,
-            ScreenSize = new(WindowWidth,WindowHeight)
+            ScreenSize = new(WindowWidth,WindowHeight),
+            AspectRatio = AspectRatio,
+            WindowAspectRatio = (float)DefinitionFile.Game.Window.Width / DefinitionFile.Game.Window.Height
         };
 
         public static Vector3 EulerToDirection(Vector3 vec)
@@ -274,7 +278,8 @@ namespace KumaEngine.Rendering
         public Vector3 Position;
         float _pad0;
         public Vector2 ScreenSize;
-        Vector2 _pad1;
+        public float AspectRatio;
+        public float WindowAspectRatio;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

@@ -23,7 +23,7 @@ namespace KumaEngine
         public Fence ComputeFence { get; private set; }
 
         KumaPipeline SkyboxPipeline;
-        Model SkyboxModel;
+        Model FullScreenQuadModel;
 
         public Game(ApplicationWindow window) : base(window) { }
 
@@ -46,13 +46,15 @@ namespace KumaEngine
             Camera._cameraPosBuffer = factory.CreateBuffer(
                 new BufferDescription((uint)Unsafe.SizeOf<CameraInfo>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic));
 
-            KumaPass.SwapChains.Add("MainSwapchain", null!);
-
             GraphicsList = factory.CreateCommandList();
             ComputeList = factory.CreateCommandList();
 
             GraphicsFence = factory.CreateFence(false);
             ComputeFence = factory.CreateFence(false);
+
+            var fb = MainSwapchain.Framebuffer;
+
+            KumaPass.SwapChains.Add("MainSwapchain", new KumaNativeSwapchain());
 
             Rml.SetRenderInterface(new KumaUiRenderInterface(
                 this,
@@ -83,23 +85,32 @@ namespace KumaEngine
             };
 
             SkyboxPipeline = KumaPipeline.FromSet(factory, "skybox");
-            SkyboxModel = new Model()
+            FullScreenQuadModel = new Model()
             {
-                Vertices = new() 
+                Vertices = new()
                 {
-                    Vertices = 
+                    Vertices =
                     [
                         new Vector3(-1f, -1f, 0f),
                         new Vector3( 1f, -1f, 0f),
                         new Vector3(-1f,  1f, 0f),
                         new Vector3( 1f,  1f, 0f),
+                    ],
+                    UVWLayers = 
+                    [
+                        [
+                            new Vector3(0f, 1f, 0f),
+                            new Vector3(1f, 1f, 0f),
+                            new Vector3(0f, 0f, 0f),
+                            new Vector3(1f, 0f, 0f),
+                        ]
                     ]
                 },
-                Indices = 
+                Indices =
                 [
                     0, 1, 2,
                     2, 1, 3,
-                ]
+                ],
             };
         }
 
@@ -125,6 +136,8 @@ namespace KumaEngine
             foreach (var item in KumaPass.SwapChains.Values)
             {
                 if (item == null) continue;
+
+                if (item.ClearColorIDS.Count == 0 && !item.ClearDepth) continue;
 
                 GraphicsList.SetFramebuffer(item.Framebuffer);
 
@@ -157,15 +170,16 @@ namespace KumaEngine
                 }
             }
 
-            if (KumaScene.CurrentScene.SkyboxMat != null)
-            {
-                foreach (var item in KumaScene.CurrentScene.Cameras)
-                {
-                    if (!item.Enabled) continue;
-                    if (item.ClearMode != CameraClearMode.Skybox) continue;
+            bool skybox = KumaScene.CurrentScene.SkyboxMat != null;
 
-                    SkyboxPipeline.Draw(GraphicsList, item, SkyboxModel, KumaScene.CurrentScene.SkyboxMat);
-                }
+            foreach (var item in KumaScene.CurrentScene.Cameras)
+            {
+                if (!item.Enabled) continue;
+                if (skybox && item.ClearMode == CameraClearMode.Skybox)
+                    SkyboxPipeline.Draw(GraphicsList, item, FullScreenQuadModel, KumaScene.CurrentScene.SkyboxMat!);
+
+                if (item.PostProcessingPipeline != null)
+                    item.PostProcessingPipeline.Draw(GraphicsList, item, FullScreenQuadModel, null!);
             }
 
             foreach (var item in UIAPI.UISurfaceHandles)

@@ -117,6 +117,7 @@ namespace KumaEngine.API
                     case "material": L.PushMaterial(go.Material); return 1;
                     case "name": L.PushString(go.Name); return 1;
                     case "parent": L.PushGameObject(go.Parent); return 1;
+                    case "pipeline": L.PushPipeline(go.Pipeline); return 1;
                 }
 
                 var rgo = GameObjectHandles.Values.FirstOrDefault(x => 
@@ -142,10 +143,11 @@ namespace KumaEngine.API
                     case "position": go.Position = L.ToVec3(3); break;
                     case "rotation": go.Rotation = L.ToVec3(3); break;
                     case "scale": go.Size = L.ToVec3(3); break;
-                    case "model": go.Model = L.ToModel(3); break;
-                    case "material": go.Material = L.ToMaterial(3); break;
+                    case "model": go.Model = L.IsNil(3) ? null! : L.ToModel(3); break;
+                    case "material": go.Material = L.IsNil(3) ? null! : L.ToMaterial(3); break;
                     case "name": go.Name = L.ToString(3); break;
-                    case "parent": go.Parent = L.ToGameObject(3); break;
+                    case "parent": go.Parent = L.IsNil(3) ? null! : L.ToGameObject(3); break;
+                    case "pipeline": go.Pipeline = L.IsNil(3) ? null! : L.ToPipeline(3); break;
                 }
                 return 0;
             });
