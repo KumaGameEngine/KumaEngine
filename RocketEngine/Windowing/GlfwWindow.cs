@@ -1,8 +1,11 @@
-﻿using KumaEngine.Glfw.Source;
+﻿using KumaEngine.API;
+using KumaEngine.Glfw.Source;
 using KumaEngine.GLFW.Native;
 using KumaEngine.Input;
+using Org.BouncyCastle.Tls;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -20,6 +23,19 @@ namespace KumaEngine.Windowing
         static extern IntPtr GetModuleHandleW(string? lpModuleName);
 
         static Dictionary<IntPtr, GlfwWindow> windowPins = new();
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+        private static void JoystickTrampoline(int jid, int ev)
+        {
+            if (ev == (int)GLFWConnectionEvent.Connected)
+                InputAPI.GamepadConnected?.Invoke(InputHandler.DeviceConnected(DeviceType.Gamepad, NullWindow, jid));
+            else
+                InputAPI.GamepadRemoved?.Invoke(
+                    InputHandler.DeviceRemoved(
+                        InputHandler.Devices.First(x => x.Value == (DeviceType.Gamepad, NullWindow, jid)).Key
+                    )
+                );
+        }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
         private static void FramebufferSizeTrampoline(GLFWwindow* window, int width, int height)
@@ -67,7 +83,8 @@ namespace KumaEngine.Windowing
         private Vector2 _mouseDelta = Vector2.Zero;
         private Vector2 _scrollDelta = Vector2.Zero;
 
-        List<MouseButton> _heldButtons = new();
+        List<MouseButton> _heldMouseButtons = new();
+        static GLFWgamepadstate[] _gamepadStates = new GLFWgamepadstate[16];
 
         public event Action<float> Rendering;
         public event Action<GraphicsDevice, ResourceFactory, Swapchain> GraphicsDeviceCreated;
@@ -83,11 +100,25 @@ namespace KumaEngine.Windowing
 
         public PlatformType PlatformType => PlatformType.Desktop;
 
-        public GlfwWindow(string title)
+        static GlfwWindow()
         {
             glfw.Init();
             glfw.SetWindowHint(GLFWContextHint.ClientApi, (int)GLFWClientApi.NoApi);
 
+            glfw.SetJoystickCallback(&JoystickTrampoline);
+
+            for (int i = (int)GLFWJoystick.Joystick1; i < (int)GLFWJoystick.Joystick16 + 1; i++)
+            {
+                if (GLFWNative.glfwJoystickPresent(i) != 0)
+                    InputHandler.DeviceConnected(DeviceType.Gamepad, NullWindow, i);
+            }
+        }
+
+        static readonly GlfwWindow NullWindow = new();
+        GlfwWindow() { }
+
+        public GlfwWindow(string title)
+        {
             _window = glfw.CreateWindow(1280,720,title);
             windowPins.Add((IntPtr)_window.Handle, this);
 
@@ -161,6 +192,12 @@ namespace KumaEngine.Windowing
                 double newElapsed = sw.Elapsed.TotalSeconds;
                 float deltaSeconds = (float)(newElapsed - previousElapsed);
 
+                for (int i = (int)GLFWJoystick.Joystick1; i < (int)GLFWJoystick.Joystick16 + 1; i++)
+                {
+                    fixed (GLFWgamepadstate* state = &_gamepadStates[i - (int)GLFWJoystick.Joystick1])
+                        GLFWNative.glfwGetGamepadState(i, state);
+                }
+
                 if (!_window.ShouldClose)
                 {
                     previousElapsed = newElapsed;
@@ -197,19 +234,24 @@ namespace KumaEngine.Windowing
             KeyPressed?.Invoke(new(k, down, md, repeat));
         }
 
-        public bool IsKeyDown(Key key) => _window.GetKey(GlfwKeyMap.ToGlfw(key)) == GLFWAction.Press;
+        public float GetJoystickAxis(int jid, GamepadAxis axis) => 
+            _gamepadStates[jid - (int)GLFWJoystick.Joystick1].axes[(int)axis];
+
+        public bool IsGamepadPressed(int jid, GamepadButton button) =>
+            _gamepadStates[jid - (int)GLFWJoystick.Joystick1].buttons[(int)button] == (int)GLFWAction.Press;
+        public bool IsKeyPressed(Key key) => _window.GetKey(GlfwKeyMap.ToGlfw(key)) == GLFWAction.Press;
         public bool IsMouseButtonPressed(MouseButton button) => _window.GetMouseButton(GlfwMouseMap.ToGlfw(button)) == GLFWAction.Press;
 
         public bool IsMouseButtonDown(MouseButton button)
         {
             var down = IsMouseButtonPressed(button);
 
-            if (!down && _heldButtons.Contains(button))
-                _heldButtons.Remove(button);
+            if (!down && _heldMouseButtons.Contains(button))
+                _heldMouseButtons.Remove(button);
 
-            if (down && !_heldButtons.Contains(button))
+            if (down && !_heldMouseButtons.Contains(button))
             {
-                _heldButtons.Add(button);
+                _heldMouseButtons.Add(button);
                 return true;
             }
 
@@ -220,12 +262,12 @@ namespace KumaEngine.Windowing
         {
             var down = IsMouseButtonPressed(button);
 
-            if (down && !_heldButtons.Contains(button))
-                _heldButtons.Add(button);
+            if (down && !_heldMouseButtons.Contains(button))
+                _heldMouseButtons.Add(button);
 
-            if (!down && _heldButtons.Contains(button))
+            if (!down && _heldMouseButtons.Contains(button))
             {
-                _heldButtons.Remove(button);
+                _heldMouseButtons.Remove(button);
                 return true;
             }
 

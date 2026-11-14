@@ -11,7 +11,7 @@ namespace KumaEngine.API
 {
     public static class GameAPI
     {
-        public static Action<float> GameUpdate = (dt) => { };
+        public static Action<float> GameUpdate = _ => { };
 
         public static LuaRegister[] Register = 
         [

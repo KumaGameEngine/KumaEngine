@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KumaEngine.Windowing;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,22 +20,27 @@ namespace KumaEngine.Input
 
         public float GetValue()
         {
+            if (!InputHandler.Devices.ContainsKey(deviceid)) return 0;
+
             var (device, window, idx) = InputHandler.Devices[deviceid];
 
             switch (device)
             {
                 case DeviceType.Keyboard:
                     return MapValues(
-                        window.IsKeyDown((Key)a), 
-                        window.IsKeyDown((Key)b)
+                        window.IsKeyPressed((Key)a), 
+                        window.IsKeyPressed((Key)b)
                     );
                 case DeviceType.Mouse:
                     return MapValues(
-                        window.IsMouseButtonDown((MouseButton)a), 
-                        window.IsMouseButtonDown((MouseButton)b)
+                        window.IsMouseButtonPressed((MouseButton)a),
+                        window.IsMouseButtonPressed((MouseButton)b)
                     );
                 case DeviceType.Gamepad:
-                    return 0;
+                    return MapValues(
+                        window.IsGamepadPressed(idx, (GamepadButton)a),
+                        window.IsGamepadPressed(idx, (GamepadButton)b)
+                    );
                 default: return 0;
             }
         }

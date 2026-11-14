@@ -60,6 +60,8 @@ namespace KumaEngine.API
                 PushEnum<CollisionFlags>("collisionFlags");
                 PushEnum<CollisionFilterGroups>("collisionGroups");
                 PushEnum<CursorMode>("cursorMode");
+                PushEnum<GamepadAxis>("gamepadAxis");
+                PushEnum<GamepadButton>("gamepadButton");
 
                 return 1;
             });

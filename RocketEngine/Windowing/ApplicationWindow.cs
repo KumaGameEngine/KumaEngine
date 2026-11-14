@@ -32,7 +32,11 @@ namespace KumaEngine.Windowing
         public Vector2 ScrollDelta();
         public Vector2 MousePosition();
 
-        public bool IsKeyDown(Key key);
+        public float GetJoystickAxis(int jid, GamepadAxis axis);
+
+        public bool IsGamepadPressed(int jid, GamepadButton button);
+
+        public bool IsKeyPressed(Key key);
         public bool IsMouseButtonDown(MouseButton button);
         public bool IsMouseButtonPressed(MouseButton button);
         public bool IsMouseButtonReleased(MouseButton button);

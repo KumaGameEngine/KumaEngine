@@ -9,15 +9,11 @@ namespace KumaEngine.Input
 {
     public static class InputHandler
     {
-        public static List<(DeviceType dev, ApplicationWindow window, int idx)> Devices { get; private set; } = new();
+        public static Dictionary<int, (DeviceType dev, ApplicationWindow window, int idx)> Devices { get; private set; } = new();
 
         static Dictionary<string, InputAction> Actions = new();
 
-        public static void RegisterAction(string name, InputAction action)
-        {
-            if (!Actions.ContainsKey(name))
-                Actions.Add(name, action);
-        }
+        public static void RegisterAction(string name, InputAction action) => Actions[name] = action;
 
         public static float GetActionValue(string name)
         {
@@ -44,9 +40,18 @@ namespace KumaEngine.Input
             return false;
         }
 
-        public static void DeviceRemoved(int devid) => Devices.RemoveAt(devid);
+        public static int DeviceRemoved(int devid)
+        {
+            Devices.Remove(devid);
+            return devid;
+        }
 
-        public static void DeviceConnected(DeviceType dev, ApplicationWindow window, int idx) =>
-            Devices.Add((dev, window, idx));
+        public static int DeviceConnected(DeviceType dev, ApplicationWindow window, int idx)
+        {
+            var id = Random.Shared.Next();
+            Devices[id] = (dev, window, idx);
+
+            return id;
+        }
     }
 }

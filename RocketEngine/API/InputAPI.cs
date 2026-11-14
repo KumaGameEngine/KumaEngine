@@ -14,10 +14,72 @@ namespace KumaEngine.API
 {
     public static class InputAPI
     {
+        public static Action<int> GamepadConnected = _ => { };
+        public static Action<int> GamepadRemoved = _ => { };
+
         public static Dictionary<int, IActionTrigger> TriggerHandles = new();
 
         public static LuaRegister[] Register = 
         [
+            DefinitionFile.RegisterFunction("bindGamepadConnected",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var func = lua.GetFunction(1);
+
+                GamepadConnected += (devid) =>
+                {
+                    int stackBefore = DefinitionFile.lua.GetTop();
+
+                    DefinitionFile.lua.RawGetInteger(LuaRegistry.Index, func);
+                    DefinitionFile.lua.PushInteger(devid);
+                    var status = DefinitionFile.lua.PCall(1, 0, 0);
+
+                    if (status != LuaStatus.OK)
+                    {
+                        string err = DefinitionFile.lua.ToString(-1);
+                        DefinitionFile.lua.Pop(1);
+                        Console.WriteLine($"Lua error: {err}");
+                    }
+
+                    int stackAfter = DefinitionFile.lua.GetTop();
+                    if (stackAfter != stackBefore)
+                        Console.WriteLine($"Stack leak: was {stackBefore}, now {stackAfter}");
+
+                    DefinitionFile.lua.GarbageCollector(LuaGC.Step, 10000);
+                };
+
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("bindGamepadRemoved",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var func = lua.GetFunction(1);
+
+                GamepadRemoved += (devid) =>
+                {
+                    int stackBefore = DefinitionFile.lua.GetTop();
+
+                    DefinitionFile.lua.RawGetInteger(LuaRegistry.Index, func);
+                    DefinitionFile.lua.PushInteger(devid);
+                    var status = DefinitionFile.lua.PCall(1, 0, 0);
+
+                    if (status != LuaStatus.OK)
+                    {
+                        string err = DefinitionFile.lua.ToString(-1);
+                        DefinitionFile.lua.Pop(1);
+                        Console.WriteLine($"Lua error: {err}");
+                    }
+
+                    int stackAfter = DefinitionFile.lua.GetTop();
+                    if (stackAfter != stackBefore)
+                        Console.WriteLine($"Stack leak: was {stackBefore}, now {stackAfter}");
+
+                    DefinitionFile.lua.GarbageCollector(LuaGC.Step, 10000);
+                };
+
+                return 1;
+            }),
+
             DefinitionFile.RegisterFunction("registerAction",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
@@ -65,6 +127,19 @@ namespace KumaEngine.API
 
                 return 1;
             }),
+            DefinitionFile.RegisterFunction("createAnalogActionTrigger",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var deviceid = (int)lua.ToInteger(1);
+                var keyA = (GamepadAxis)lua.ToInteger(2);
+
+                float deazone = 0.17f;
+                if (lua.IsNumber(3)) deazone = (float)lua.ToNumber(3);
+
+                lua.PushActionTrigger(new AnalogActionTrigger(deviceid, keyA, deazone));
+
+                return 1;
+            }),
 
             DefinitionFile.RegisterFunction("getKeyboardDevice",ilua =>
             {
@@ -72,9 +147,9 @@ namespace KumaEngine.API
                 var deviceidx = (int)lua.ToInteger(1);
 
                 var keyboardIndices = InputHandler.Devices
-                    .Select((d, i) => (d, i))
-                    .Where(x => x.d.dev == DeviceType.Keyboard)
-                    .Select(x => x.i)
+                    .Where(kv => kv.Value.dev == DeviceType.Keyboard)
+                    .Select(kv => kv.Key)
+                    .OrderBy(k => k)
                     .ToArray();
 
                 if (keyboardIndices.Length == 0)
@@ -94,9 +169,9 @@ namespace KumaEngine.API
                 var deviceidx = (int)lua.ToInteger(1);
 
                 var keyboardIndices = InputHandler.Devices
-                    .Select((d, i) => (d, i))
-                    .Where(x => x.d.dev == DeviceType.Mouse)
-                    .Select(x => x.i)
+                    .Where(kv => kv.Value.dev == DeviceType.Mouse)
+                    .Select(kv => kv.Key)
+                    .OrderBy(k => k)
                     .ToArray();
 
                 if (keyboardIndices.Length == 0)
@@ -116,9 +191,9 @@ namespace KumaEngine.API
                 var deviceidx = (int)lua.ToInteger(1);
 
                 var keyboardIndices = InputHandler.Devices
-                    .Select((d, i) => (d, i))
-                    .Where(x => x.d.dev == DeviceType.Gamepad)
-                    .Select(x => x.i)
+                    .Where(kv => kv.Value.dev == DeviceType.Gamepad)
+                    .Select(kv => kv.Key)
+                    .OrderBy(k => k)
                     .ToArray();
 
                 if (keyboardIndices.Length == 0)
