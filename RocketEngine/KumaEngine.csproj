@@ -25,13 +25,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AssimpNetter" Version="6.0.4" />
+    <PackageReference Include="AssimpNetter" Version="6.0.5" />
     <PackageReference Include="JAJ.Packages.BulletSharp" Version="1.0.2" />
-    <PackageReference Include="KeraLua" Version="1.4.9" />
+    <PackageReference Include="KeraLua" Version="1.4.11" />
+    <PackageReference Include="KumaEngine.Glfw" Version="3.5.1" />
     <PackageReference Include="KumaEngine.OpenAL" Version="1.0.1" />
     <PackageReference Include="KumaEngine.RmlUi.Net" Version="1.0.2-beta.4" />
     <PackageReference Include="RePAKLib" Version="1.0.0" />
-    <PackageReference Include="StbImageSharp" Version="2.30.15" />
+    <PackageReference Include="StbImageSharp" Version="2.30.16" />
     <PackageReference Include="Veldrid.SPIRV" Version="1.0.15" />
     <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0" />
     <PackageReference Include="Veldrid.Utilities" Version="4.9.0" />

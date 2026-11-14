@@ -46,7 +46,7 @@ namespace KumaEngine.API
         {
             int val = (int)lua.ToInteger(index);
             if (PipelineHandles.TryGetValue(val, out var mdl)) return mdl;
-            throw new Exception("Invalid model handle");
+            throw new Exception("Invalid material handle");
         }
     }
 }

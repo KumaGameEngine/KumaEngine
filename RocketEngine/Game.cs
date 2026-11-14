@@ -184,14 +184,12 @@ namespace KumaEngine
 
             foreach (var item in UIAPI.UISurfaceHandles)
             {
-                if (!item.Value.Camera.Enabled) continue;
+                if (!item.Value.Visible) continue;
 
-                KumaUiRenderInterface.RenderCamera = item.Value.Camera;
+                var fb = item.Value.Swapchain.Framebuffer ?? MainSwapchain.Framebuffer;
+                KumaUiRenderInterface.RenderFb = fb;
 
-                item.Value.Resize(
-                    (uint)item.Value.Camera.WindowWidth, 
-                    (uint)item.Value.Camera.WindowHeight
-                );
+                item.Value.Resize(fb.Width, fb.Height);
 
                 item.Value.Update(deltaSeconds);
                 item.Value.Render();

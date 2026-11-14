@@ -20,7 +20,7 @@ namespace KumaEngine.UI
         Context ctx;
         ElementDocument doc = null!;
 
-        public Camera Camera;
+        public KumaSwapchain Swapchain;
 
         float keyrepeat = 0;
 
@@ -39,9 +39,9 @@ namespace KumaEngine.UI
             }
         }
 
-        public UISurface(string name, string rml, Camera camera)
+        public UISurface(string name, string rml, KumaSwapchain swap)
         {
-            Camera = camera;
+            Swapchain = swap;
 
             ctx = Rml.CreateContext(
                 name,
@@ -74,7 +74,9 @@ namespace KumaEngine.UI
                 keyrepeat = 0;
             }
 
-            var cpos = InputTracker.MousePosition;
+            var win = DefinitionFile.Game.Window;
+
+            var cpos = win.MousePosition();
             if (cppos != cpos)
             {
                 ctx.ProcessMouseMove((int)cpos.X, (int)cpos.Y,RmlUiNet.Input.KeyModifier.None);
@@ -84,45 +86,53 @@ namespace KumaEngine.UI
 
             if (ctx.IsMouseInteracting)
             {
-                if (InputTracker.ScrollDelta != 0)
-                    ctx.ProcessMouseWheel(new(0, InputTracker.ScrollDelta), RmlUiNet.Input.KeyModifier.None);
+                var scroll = win.ScrollDelta();
 
-                foreach (var item in InputTracker.GetMouseButtons())
-                    ctx.ProcessMouseButtonDown((int)item, RmlUiNet.Input.KeyModifier.None);
+                if (scroll.X != 0 || scroll.Y != 0)
+                    ctx.ProcessMouseWheel(new(scroll.X, scroll.Y), RmlUiNet.Input.KeyModifier.None);
 
-                foreach (var item in InputTracker.GetReleasedMouseButtons())
-                    ctx.ProcessMouseButtonUp((int)item, RmlUiNet.Input.KeyModifier.None);
+                if (win.IsMouseButtonDown(MouseButton.Left))
+                    ctx.ProcessMouseButtonDown((int)MouseButton.Left, RmlUiNet.Input.KeyModifier.None);
+
+                if (win.IsMouseButtonDown(MouseButton.Right))
+                    ctx.ProcessMouseButtonDown((int)MouseButton.Right, RmlUiNet.Input.KeyModifier.None);
+
+                if (win.IsMouseButtonReleased(MouseButton.Left))
+                    ctx.ProcessMouseButtonUp((int)MouseButton.Left, RmlUiNet.Input.KeyModifier.None);
+
+                if (win.IsMouseButtonReleased(MouseButton.Right))
+                    ctx.ProcessMouseButtonUp((int)MouseButton.Right, RmlUiNet.Input.KeyModifier.None);
             }
 
-            if (ctx.GetFocusElement() != null)
-            {
-                string keydata = "";
+            //if (ctx.GetFocusElement() != null)
+            //{
+            //    string keydata = "";
 
-                foreach (var item in InputTracker.GetPressedKeyChars())
-                    keydata += item;
+            //    foreach (var item in InputTracker.GetPressedKeyChars())
+            //        keydata += item;
 
-                bool triggered = false;
+            //    bool triggered = false;
 
-                foreach (var item in KeyProcessor)
-                {
-                    if (triggerkey && InputTracker.GetKey(item.Key))
-                    {
-                        triggered = true;
-                        ctx.ProcessKeyDown(item.Value, RmlUiNet.Input.KeyModifier.None);
-                    }
+            //    foreach (var item in KeyProcessor)
+            //    {
+            //        if (triggerkey && InputTracker.GetKey(item.Key))
+            //        {
+            //            triggered = true;
+            //            ctx.ProcessKeyDown(item.Value, RmlUiNet.Input.KeyModifier.None);
+            //        }
 
-                    if (InputTracker.GetKeyReleased(item.Key))
-                        ctx.ProcessKeyUp(item.Value, RmlUiNet.Input.KeyModifier.None);
-                }
+            //        if (InputTracker.GetKeyReleased(item.Key))
+            //            ctx.ProcessKeyUp(item.Value, RmlUiNet.Input.KeyModifier.None);
+            //    }
 
-                if (triggerkey)
-                {
-                    if (triggered) keytriggers++;
-                    else keytriggers = 0;
-                }
+            //    if (triggerkey)
+            //    {
+            //        if (triggered) keytriggers++;
+            //        else keytriggers = 0;
+            //    }
 
-                ctx.ProcessTextInput(keydata);
-            }
+            //    ctx.ProcessTextInput(keydata);
+            //}
 
             keyrepeat += dt;
 

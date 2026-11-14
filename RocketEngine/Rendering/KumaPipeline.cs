@@ -120,7 +120,7 @@ namespace KumaEngine.Rendering
             return (definition.GroupCountX, definition.GroupCountY, definition.GroupCountZ);
         }
 
-        public void Draw(CommandList list, Camera cam, Model model, KumaMaterial mat)
+        public void Draw(CommandList list, Camera cam, Model model, KumaMaterial mat, Framebuffer fboverride = null!)
         {
             var mdl = model.GetCompiledVerticies(
                 DefinitionFile.Game.GraphicsDevice,
@@ -159,7 +159,7 @@ namespace KumaEngine.Rendering
                     continue;
                 }
 
-                var rb = item.GetFramebuffer(DefinitionFile.Game.ResourceFactory,cam);
+                var rb = fboverride ?? item.GetFramebuffer(DefinitionFile.Game.ResourceFactory,cam);
 
                 if (_previousFB != rb)
                 {

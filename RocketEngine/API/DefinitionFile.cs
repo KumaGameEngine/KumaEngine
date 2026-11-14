@@ -2,6 +2,7 @@
 using BulletSharp;
 using KeraLua;
 using KumaEngine.Rendering;
+using KumaEngine.Windowing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -58,6 +59,7 @@ namespace KumaEngine.API
                 PushEnum<CameraClearMode>("clearMode");
                 PushEnum<CollisionFlags>("collisionFlags");
                 PushEnum<CollisionFilterGroups>("collisionGroups");
+                PushEnum<CursorMode>("cursorMode");
 
                 return 1;
             });

@@ -26,9 +26,13 @@ namespace KumaEngine.API
                 var lua = Lua.FromIntPtr(ilua);
                 var d = lua.ToString(1);
                 var f = lua.ToString(2);
-                var c = lua.ToCamera(3);
 
-                lua.PushUISurface(new UISurface(d, f, c));
+                string swap = "MainSwapchain";
+
+                if (!lua.IsNoneOrNil(3))
+                    swap = lua.ToSwapchain(3);
+
+                lua.PushUISurface(new UISurface(d, f, KumaPass.SwapChains[swap]));
 
                 return 1;
             })

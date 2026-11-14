@@ -226,5 +226,30 @@ namespace KumaEngine.API
 
             lua.SetMetaTable(-2);
         }
+
+        public static int[] ToIntArray(this Lua lua,int index)
+        {
+            lua.CheckType(index, LuaType.Table);
+
+            var ids = new List<int>();
+            int len = (int)lua.RawLen(index);
+
+            for (int i = 1; i <= len; i++)
+            {
+                lua.RawGetInteger(index, i);
+
+                if (!lua.IsInteger(-1))
+                {
+                    lua.Pop(1);
+                    lua.Error($"registerAction: element {i} is not an integer");
+                    return [];
+                }
+
+                ids.Add((int)lua.ToInteger(-1));
+                lua.Pop(1);
+            }
+
+            return ids.ToArray();
+        }
     }
 }

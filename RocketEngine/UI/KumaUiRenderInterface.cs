@@ -16,7 +16,7 @@ namespace KumaEngine.UI
 {
     public class KumaUiRenderInterface(Game g,KumaPipeline pipeline,CommandList cl) : RenderInterface
     {
-        public static Camera RenderCamera = null!;
+        public static Framebuffer RenderFb = null!;
 
         Dictionary<nint, KumaMaterial> UITextures = new();
         Dictionary<nint, Model> Geometry = new();
@@ -154,7 +154,7 @@ namespace KumaEngine.UI
                 fixed (byte* b = i) GenerateTextureID(b, i.Length,new(1,1),0);
             }
 
-            pipeline.Draw(cl, RenderCamera, Geometry[geometry], UITextures[texture]);
+            pipeline.Draw(cl, null!, Geometry[geometry], UITextures[texture], RenderFb);
         }
         public override void ReleaseGeometry(nint geometry)
         {

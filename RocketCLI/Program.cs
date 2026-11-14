@@ -136,7 +136,7 @@ namespace KumaCLI
                         )
                     );
 
-                    SdlWindow window = new SdlWindow("KumaCLI debug");
+                    GlfwWindow window = new GlfwWindow("KumaCLI debug");
                     Game instance = new Game(window);
 
                     var backend = PropertiesManager.GetBackend(properties);

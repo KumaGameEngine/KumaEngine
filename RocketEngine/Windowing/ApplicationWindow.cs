@@ -3,6 +3,7 @@
     Modified by: RocketEngine Team
 */
 
+using KumaEngine.Glfw.Source;
 using System;
 using System.Numerics;
 using Veldrid;
@@ -20,9 +21,7 @@ namespace KumaEngine.Windowing
         event Action Closing;
         event Action<KeyEvent> KeyPressed;
 
-        void HideCursor(bool hiding);
-        void RelativeCursor(bool relative);
-        void CenterCursor();
+        void SetCursorMode(CursorMode mode);
         public void SetCursorPosition(Vector2 pos);
 
         uint Width { get; }
@@ -30,6 +29,13 @@ namespace KumaEngine.Windowing
 
         public Vector2 Size();
         public Vector2 MouseDelta();
+        public Vector2 ScrollDelta();
+        public Vector2 MousePosition();
+
+        public bool IsKeyDown(Key key);
+        public bool IsMouseButtonDown(MouseButton button);
+        public bool IsMouseButtonPressed(MouseButton button);
+        public bool IsMouseButtonReleased(MouseButton button);
 
         void Run(GraphicsBackend backend);
     }
