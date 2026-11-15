@@ -8,24 +8,47 @@ using Veldrid;
 
 namespace KumaEngine.Input
 {
-    public class ValueActionTrigger(int deviceid, int a, float value) : IActionTrigger
+    public class ValueActionTrigger(DeviceType device, int deviceid, int a, float value) : IActionTrigger
     {
         public float GetValue()
         {
-            if (!InputHandler.Devices.ContainsKey(deviceid)) return 0;
-
-            var (device, window, idx) = InputHandler.Devices[deviceid];
-
             switch (device)
             {
                 case DeviceType.Keyboard:
-                    return window.IsKeyPressed((Key)a) ? value : 0;
+                    return GetKb(deviceid, a) ? value : 0;
                 case DeviceType.Mouse:
-                    return window.IsMouseButtonDown((MouseButton)a) ? value : 0;
+                    return GetMouse(deviceid, a) ? value : 0;
                 case DeviceType.Gamepad:
-                    return window.IsGamepadPressed(idx, (GamepadButton)a) ? value : 0;
+                    return GetGamepad(deviceid, a) ? value : 0;
                 default: return 0;
             }
+        }
+
+        static bool GetKb(int devid, int a)
+        {
+            if (devid >= InputHandler.Keyboards.Count) return false;
+
+            var window = InputHandler.Keyboards[devid];
+
+            return window.IsKeyPressed((Key)a);
+        }
+
+        static bool GetMouse(int devid, int a)
+        {
+            if (devid >= InputHandler.Mice.Count) return false;
+
+            var window = InputHandler.Mice[devid];
+
+            return window.IsMouseButtonPressed((MouseButton)a);
+        }
+
+        static bool GetGamepad(int devid, int a)
+        {
+            if (devid >= InputHandler.Gamepads.Count) return false;
+
+            var (window, jid) = InputHandler.Gamepads[devid];
+
+            return window.IsGamepadPressed(jid, (GamepadButton)a);
         }
     }
 }

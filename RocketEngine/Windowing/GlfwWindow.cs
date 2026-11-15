@@ -32,7 +32,8 @@ namespace KumaEngine.Windowing
             else
                 InputAPI.GamepadRemoved?.Invoke(
                     InputHandler.DeviceRemoved(
-                        InputHandler.Devices.First(x => x.Value == (DeviceType.Gamepad, NullWindow, jid)).Key
+                        DeviceType.Gamepad,
+                        InputHandler.Gamepads.IndexOf((NullWindow, jid))
                     )
                 );
         }
@@ -137,8 +138,8 @@ namespace KumaEngine.Windowing
 
         public void Run(GraphicsBackend backend)
         {
-            InputHandler.DeviceConnected(DeviceType.Keyboard, this, 0);
-            InputHandler.DeviceConnected(DeviceType.Mouse, this, 0);
+            InputHandler.DeviceConnected(DeviceType.Keyboard, this);
+            InputHandler.DeviceConnected(DeviceType.Mouse, this);
 
             GraphicsDeviceOptions options = new GraphicsDeviceOptions(
                 debug: false,

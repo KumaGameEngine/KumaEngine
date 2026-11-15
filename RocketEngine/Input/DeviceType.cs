@@ -8,8 +8,8 @@ namespace KumaEngine.Input
 {
     public enum DeviceType
     {
-        Keyboard,
-        Mouse,
-        Gamepad
+        Keyboard = 0,
+        Mouse = 1,
+        Gamepad = 2
     }
 }

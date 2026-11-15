@@ -98,32 +98,35 @@ namespace KumaEngine.API
             DefinitionFile.RegisterFunction("createDigitalActionTrigger",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                var deviceid = (int)lua.ToInteger(1);
-                var keyA = (int)lua.ToInteger(2);
-                var keyB = (int)lua.ToInteger(3);
+                var devtype = (DeviceType)lua.ToInteger(1);
+                var deviceid = (int)lua.ToInteger(2);
+                var keyA = (int)lua.ToInteger(3);
+                var keyB = (int)lua.ToInteger(4);
 
-                lua.PushActionTrigger(new DigitalActionTrigger(deviceid, keyA, keyB));
+                lua.PushActionTrigger(new DigitalActionTrigger(devtype, deviceid, keyA, keyB));
 
                 return 1;
             }),
             DefinitionFile.RegisterFunction("createValueActionTrigger",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                var deviceid = (int)lua.ToInteger(1);
-                var keyA = (int)lua.ToInteger(2);
-                var value = (float)lua.ToNumber(3);
+                var devtype = (DeviceType)lua.ToInteger(1);
+                var deviceid = (int)lua.ToInteger(2);
+                var keyA = (int)lua.ToInteger(3);
+                var keyB = (float)lua.ToNumber(4);
 
-                lua.PushActionTrigger(new ValueActionTrigger(deviceid, keyA, value));
+                lua.PushActionTrigger(new ValueActionTrigger(devtype, deviceid, keyA, keyB));
 
                 return 1;
             }),
             DefinitionFile.RegisterFunction("createBooleanActionTrigger",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                var deviceid = (int)lua.ToInteger(1);
-                var keyA = (int)lua.ToInteger(2);
+                var devtype = (DeviceType)lua.ToInteger(1);
+                var deviceid = (int)lua.ToInteger(2);
+                var keyA = (int)lua.ToInteger(3);
 
-                lua.PushActionTrigger(new ValueActionTrigger(deviceid, keyA, 1));
+                lua.PushActionTrigger(new ValueActionTrigger(devtype, deviceid, keyA, 1));
 
                 return 1;
             }),
@@ -141,68 +144,51 @@ namespace KumaEngine.API
                 return 1;
             }),
 
-            DefinitionFile.RegisterFunction("getKeyboardDevice",ilua =>
+            DefinitionFile.RegisterFunction("createInverseActionTrigger",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                var deviceidx = (int)lua.ToInteger(1);
+                var devtype = lua.ToActionTrigger(1);
 
-                var keyboardIndices = InputHandler.Devices
-                    .Where(kv => kv.Value.dev == DeviceType.Keyboard)
-                    .Select(kv => kv.Key)
-                    .OrderBy(k => k)
-                    .ToArray();
-
-                if (keyboardIndices.Length == 0)
-                {
-                    lua.PushNil();
-                    return 1;
-                }
-
-                lua.PushInteger(keyboardIndices[Math.Clamp(deviceidx, 0, keyboardIndices.Length - 1)]);
+                lua.PushActionTrigger(new InverseActionTrigger(devtype));
 
                 return 1;
             }),
-
-            DefinitionFile.RegisterFunction("getMouseDevice",ilua =>
+            DefinitionFile.RegisterFunction("createNOTActionTrigger",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                var deviceidx = (int)lua.ToInteger(1);
+                var devtype = lua.ToActionTrigger(1);
 
-                var keyboardIndices = InputHandler.Devices
-                    .Where(kv => kv.Value.dev == DeviceType.Mouse)
-                    .Select(kv => kv.Key)
-                    .OrderBy(k => k)
-                    .ToArray();
-
-                if (keyboardIndices.Length == 0)
-                {
-                    lua.PushNil();
-                    return 1;
-                }
-
-                lua.PushInteger(keyboardIndices[Math.Clamp(deviceidx, 0, keyboardIndices.Length - 1)]);
+                lua.PushActionTrigger(new NOTActionTrigger(devtype));
 
                 return 1;
             }),
-
-            DefinitionFile.RegisterFunction("getGamepadDevice",ilua =>
+            DefinitionFile.RegisterFunction("createANDActionTrigger",ilua =>
             {
                 var lua = Lua.FromIntPtr(ilua);
-                var deviceidx = (int)lua.ToInteger(1);
+                var A = lua.ToActionTrigger(1);
+                var B = lua.ToActionTrigger(2);
 
-                var keyboardIndices = InputHandler.Devices
-                    .Where(kv => kv.Value.dev == DeviceType.Gamepad)
-                    .Select(kv => kv.Key)
-                    .OrderBy(k => k)
-                    .ToArray();
+                lua.PushActionTrigger(new ANDActionTrigger(A, B));
 
-                if (keyboardIndices.Length == 0)
-                {
-                    lua.PushNil();
-                    return 1;
-                }
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("createORActionTrigger",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var A = lua.ToActionTrigger(1);
+                var B = lua.ToActionTrigger(2);
 
-                lua.PushInteger(keyboardIndices[Math.Clamp(deviceidx, 0, keyboardIndices.Length - 1)]);
+                lua.PushActionTrigger(new ORActionTrigger(A, B));
+
+                return 1;
+            }),
+            DefinitionFile.RegisterFunction("createXORActionTrigger",ilua =>
+            {
+                var lua = Lua.FromIntPtr(ilua);
+                var A = lua.ToActionTrigger(1);
+                var B = lua.ToActionTrigger(2);
+
+                lua.PushActionTrigger(new XORActionTrigger(A, B));
 
                 return 1;
             }),

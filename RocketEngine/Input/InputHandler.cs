@@ -9,7 +9,9 @@ namespace KumaEngine.Input
 {
     public static class InputHandler
     {
-        public static Dictionary<int, (DeviceType dev, ApplicationWindow window, int idx)> Devices { get; private set; } = new();
+        public static List<ApplicationWindow> Keyboards { get; private set; } = new();
+        public static List<ApplicationWindow> Mice { get; private set; } = new();
+        public static List<(ApplicationWindow window, int jid)> Gamepads { get; private set; } = new();
 
         static Dictionary<string, InputAction> Actions = new();
 
@@ -40,18 +42,37 @@ namespace KumaEngine.Input
             return false;
         }
 
-        public static int DeviceRemoved(int devid)
+        public static int DeviceRemoved(DeviceType dev, int devid)
         {
-            Devices.Remove(devid);
+            switch (dev)
+            {
+                case DeviceType.Keyboard:
+                    Keyboards.RemoveAt(devid); break;
+                case DeviceType.Mouse:
+                    Mice.RemoveAt(devid); break;
+                case DeviceType.Gamepad:
+                    Gamepads.RemoveAt(devid); break;
+            }
+
             return devid;
         }
 
-        public static int DeviceConnected(DeviceType dev, ApplicationWindow window, int idx)
+        public static int DeviceConnected(DeviceType dev, ApplicationWindow window, int idx = 0)
         {
-            var id = Random.Shared.Next();
-            Devices[id] = (dev, window, idx);
+            switch (dev)
+            {
+                case DeviceType.Keyboard:
+                    Keyboards.Add(window);
+                    return Keyboards.Count - 1;
+                case DeviceType.Mouse:
+                    Mice.Add(window);
+                    return Mice.Count - 1;
+                case DeviceType.Gamepad:
+                    Gamepads.Add((window, idx));
+                    return Gamepads.Count - 1;
+            }
 
-            return id;
+            return -1;
         }
     }
 }

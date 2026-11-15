@@ -12,16 +12,13 @@ namespace KumaEngine.Input
     {
         public float GetValue()
         {
-            if (!InputHandler.Devices.ContainsKey(deviceid)) return 0;
+            if (deviceid >= InputHandler.Gamepads.Count) return 0;
 
-            var (device, window, idx) = InputHandler.Devices[deviceid];
+            var (window, idx) = InputHandler.Gamepads[deviceid];
 
-            if (device == DeviceType.Gamepad)
-            {
-                var val = window.GetJoystickAxis(idx, axis);
+            var val = window.GetJoystickAxis(idx, axis);
 
-                if (Math.Abs(val) > deadzone) return val;
-            }
+            if (Math.Abs(val) > deadzone) return val;
 
             return 0;
         }

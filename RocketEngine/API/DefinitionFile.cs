@@ -1,6 +1,7 @@
 ﻿using Assimp;
 using BulletSharp;
 using KeraLua;
+using KumaEngine.Input;
 using KumaEngine.Rendering;
 using KumaEngine.Windowing;
 using Newtonsoft.Json;
@@ -62,6 +63,7 @@ namespace KumaEngine.API
                 PushEnum<CursorMode>("cursorMode");
                 PushEnum<GamepadAxis>("gamepadAxis");
                 PushEnum<GamepadButton>("gamepadButton");
+                PushEnum<DeviceType>("deviceType");
 
                 return 1;
             });

@@ -8,7 +8,7 @@ using Veldrid;
 
 namespace KumaEngine.Input
 {
-    public class DigitalActionTrigger(int deviceid, int a, int b) : IActionTrigger
+    public class DigitalActionTrigger(DeviceType device, int deviceid, int a, int b) : IActionTrigger
     {
         static float MapValues(bool a, bool b)
         {
@@ -20,29 +20,52 @@ namespace KumaEngine.Input
 
         public float GetValue()
         {
-            if (!InputHandler.Devices.ContainsKey(deviceid)) return 0;
-
-            var (device, window, idx) = InputHandler.Devices[deviceid];
-
             switch (device)
             {
                 case DeviceType.Keyboard:
-                    return MapValues(
-                        window.IsKeyPressed((Key)a), 
-                        window.IsKeyPressed((Key)b)
-                    );
+                    return GetKb(deviceid, a, b);
                 case DeviceType.Mouse:
-                    return MapValues(
-                        window.IsMouseButtonPressed((MouseButton)a),
-                        window.IsMouseButtonPressed((MouseButton)b)
-                    );
+                    return GetMouse(deviceid, a, b);
                 case DeviceType.Gamepad:
-                    return MapValues(
-                        window.IsGamepadPressed(idx, (GamepadButton)a),
-                        window.IsGamepadPressed(idx, (GamepadButton)b)
-                    );
+                    return GetGamepad(deviceid, a, b);
                 default: return 0;
             }
+        }
+
+        static float GetKb(int devid, int a, int b)
+        {
+            if (devid >= InputHandler.Keyboards.Count) return 0;
+
+            var window = InputHandler.Keyboards[devid];
+
+            return MapValues(
+                window.IsKeyPressed((Key)a),
+                window.IsKeyPressed((Key)b)
+            );
+        }
+
+        static float GetMouse(int devid, int a, int b)
+        {
+            if (devid >= InputHandler.Mice.Count) return 0;
+
+            var window = InputHandler.Mice[devid];
+
+            return MapValues(
+                window.IsMouseButtonPressed((MouseButton)a),
+                window.IsMouseButtonPressed((MouseButton)b)
+            );
+        }
+
+        static float GetGamepad(int devid, int a, int b)
+        {
+            if (devid >= InputHandler.Gamepads.Count) return 0;
+
+            var (window, jid) = InputHandler.Gamepads[devid];
+
+            return MapValues(
+                window.IsGamepadPressed(jid, (GamepadButton)a),
+                window.IsGamepadPressed(jid, (GamepadButton)b)
+            );
         }
     }
 }
