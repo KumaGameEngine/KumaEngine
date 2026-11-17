@@ -30,7 +30,7 @@ namespace KumaEngine.Rendering
 
         public bool SupportsResizing { get; private set; } = true;
 
-        public static KumaSwapchain FromVeldrid(ResourceFactory factory,Swapchain swapchain,string name)
+        public static KumaSwapchain FromVeldrid(Swapchain swapchain)
         {
             var sw = new KumaSwapchain();
             sw.Framebuffer = swapchain.Framebuffer;

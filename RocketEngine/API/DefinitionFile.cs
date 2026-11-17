@@ -20,7 +20,7 @@ namespace KumaEngine.API
         public static Lua lua;
         public static Game Game;
 
-        static Dictionary<string, LuaRegister[]> EngineLib = new()
+        static readonly Dictionary<string, LuaRegister[]> EngineLib = new()
         {
             {"model",ModelAPI.Register},
             {"pipeline",PipelineAPI.Register},
@@ -78,7 +78,7 @@ namespace KumaEngine.API
             }
         }
 
-        public static LuaRegister RegisterFunction(string name, LuaFunction function) => new LuaRegister()
+        public static LuaRegister RegisterFunction(string name, LuaFunction function) => new()
         {
             name = name,
             function = function
@@ -100,7 +100,7 @@ namespace KumaEngine.API
         public static void PushSection(string name, LuaRegister[] section)
         {
             var s = section.ToList();
-            s.Add(new LuaRegister() { name = null, function = null });
+            s.Add(new() { name = null, function = null });
 
             lua.NewLib(s.ToArray());
             MakeReadOnly();
@@ -128,8 +128,7 @@ namespace KumaEngine.API
         {
             var pin = module + "." + field;
 
-            if (!PinnedDelegates.ContainsKey(pin))
-                PinnedDelegates.Add(pin, fn);
+            PinnedDelegates.TryAdd(pin, fn);
 
             lua.PushCFunction(PinnedDelegates[pin]);
 
