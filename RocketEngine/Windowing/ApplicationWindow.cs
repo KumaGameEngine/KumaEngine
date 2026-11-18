@@ -19,7 +19,6 @@ namespace KumaEngine.Windowing
         event Action GraphicsDeviceDestroyed;
         event Action Resized;
         event Action Closing;
-        event Action<KeyEvent> KeyPressed;
 
         void SetCursorMode(CursorMode mode);
         public void SetCursorPosition(Vector2 pos);
@@ -36,7 +35,13 @@ namespace KumaEngine.Windowing
 
         public bool IsGamepadPressed(int jid, GamepadButton button);
 
+        public string GetPressedCharacters();
+        public List<Key> GetPressedKeys();
+
         public bool IsKeyPressed(Key key);
+        public bool IsKeyDown(Key button);
+        public bool IsKeyReleased(Key button);
+
         public bool IsMouseButtonDown(MouseButton button);
         public bool IsMouseButtonPressed(MouseButton button);
         public bool IsMouseButtonReleased(MouseButton button);

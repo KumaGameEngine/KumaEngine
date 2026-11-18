@@ -50,7 +50,7 @@ namespace KumaEngine.UI
                     (int)DefinitionFile.Game.Window.Height
                 )
             )!;
-
+            
             LoadDocument(rml);
         }
 
@@ -104,35 +104,30 @@ namespace KumaEngine.UI
                     ctx.ProcessMouseButtonUp((int)MouseButton.Right, RmlUiNet.Input.KeyModifier.None);
             }
 
-            //if (ctx.GetFocusElement() != null)
-            //{
-            //    string keydata = "";
+            if (ctx.GetFocusElement() != null)
+            {
+                bool triggered = false;
 
-            //    foreach (var item in InputTracker.GetPressedKeyChars())
-            //        keydata += item;
+                foreach (var item in KeyProcessor)
+                {
+                    if (triggerkey && DefinitionFile.Game.Window.IsKeyPressed(item.Key))
+                    {
+                        triggered = true;
+                        ctx.ProcessKeyDown(item.Value, RmlUiNet.Input.KeyModifier.None);
+                    }
 
-            //    bool triggered = false;
+                    if (DefinitionFile.Game.Window.IsKeyReleased(item.Key))
+                        ctx.ProcessKeyUp(item.Value, RmlUiNet.Input.KeyModifier.None);
+                }
 
-            //    foreach (var item in KeyProcessor)
-            //    {
-            //        if (triggerkey && InputTracker.GetKey(item.Key))
-            //        {
-            //            triggered = true;
-            //            ctx.ProcessKeyDown(item.Value, RmlUiNet.Input.KeyModifier.None);
-            //        }
+                if (triggerkey)
+                {
+                    if (triggered) keytriggers++;
+                    else keytriggers = 0;
+                }
 
-            //        if (InputTracker.GetKeyReleased(item.Key))
-            //            ctx.ProcessKeyUp(item.Value, RmlUiNet.Input.KeyModifier.None);
-            //    }
-
-            //    if (triggerkey)
-            //    {
-            //        if (triggered) keytriggers++;
-            //        else keytriggers = 0;
-            //    }
-
-            //    ctx.ProcessTextInput(keydata);
-            //}
+                ctx.ProcessTextInput(DefinitionFile.Game.Window.GetPressedCharacters());
+            }
 
             keyrepeat += dt;
 

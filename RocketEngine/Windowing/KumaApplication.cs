@@ -26,7 +26,6 @@ namespace KumaEngine.Windowing
             Window.GraphicsDeviceCreated += OnGraphicsDeviceCreated;
             Window.GraphicsDeviceDestroyed += OnDeviceDestroyed;
             Window.Rendering += Draw;
-            Window.KeyPressed += OnKeyDown;
             Window.Closing += Closing;
         }
 
@@ -46,8 +45,6 @@ namespace KumaEngine.Windowing
             MainSwapchain = null;
         }
 
-        protected virtual string GetTitle() => GetType().Name;
-
         protected abstract void CreateResources(ResourceFactory factory);
 
         protected virtual void CreateSwapchainResources(ResourceFactory factory) { }
@@ -58,38 +55,6 @@ namespace KumaEngine.Windowing
         protected virtual void HandleWindowResize()
         {
             
-        }
-
-        protected virtual void OnKeyDown(KeyEvent ke) { }
-
-        public Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name)!;
-
-        public byte[] ReadEmbeddedAssetBytes(string name)
-        {
-            using (Stream stream = OpenEmbeddedAssetStream(name))
-            {
-                byte[] bytes = new byte[stream.Length];
-                using (MemoryStream ms = new MemoryStream(bytes))
-                {
-                    stream.CopyTo(ms);
-                    return bytes;
-                }
-            }
-        }
-
-        private static string GetExtension(GraphicsBackend backendType)
-        {
-			bool isMacOS = RuntimeInformation.OSDescription.Contains("Darwin");
-
-            return backendType == GraphicsBackend.Direct3D11
-                ? "hlsl.bytes"
-                : backendType == GraphicsBackend.Vulkan
-                    ? "450.glsl.spv"
-                    : backendType == GraphicsBackend.Metal
-					    ? isMacOS ? "metallib" : "ios.metallib"
-                        : backendType == GraphicsBackend.OpenGL
-                            ? "330.glsl"
-                            : "300.glsles";
         }
     }
 }

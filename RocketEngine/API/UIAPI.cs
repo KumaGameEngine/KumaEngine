@@ -139,7 +139,6 @@ namespace KumaEngine.API
             lua.PushSafeCFunction("click", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
-                string p = L.ToString(1);
 
                 element.Click();
 
@@ -149,7 +148,6 @@ namespace KumaEngine.API
             lua.PushSafeCFunction("focus", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
-                string p = L.ToString(1);
 
                 element.Focus();
 
@@ -159,7 +157,6 @@ namespace KumaEngine.API
             lua.PushSafeCFunction("blur", MODNAME, ilua =>
             {
                 var L = Lua.FromIntPtr(ilua);
-                string p = L.ToString(1);
 
                 element.Blur();
 
@@ -251,7 +248,7 @@ namespace KumaEngine.API
                 var L = Lua.FromIntPtr(ilua);
                 var id = lua.ToString(1);
 
-                lua.PushElement(UISurfaceHandles[handle].GetElementById(id)!);
+                L.PushElement(UISurfaceHandles[handle].GetElementById(id)!);
                 return 1;
             });
 

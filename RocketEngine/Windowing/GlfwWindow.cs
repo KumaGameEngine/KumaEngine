@@ -53,7 +53,14 @@ namespace KumaEngine.Windowing
         private static void KeyTrampoline(GLFWwindow* window, int key, int scancode, int action, int mods)
         {
             if (windowPins.TryGetValue((IntPtr)window, out var w))
-                w.OnKeyDown(key, scancode, action, mods);
+            {
+                Key k = GlfwKeyMap.ToVeldrid(key);
+
+                if (action == (int)GLFWAction.Release && w._keysBuffer.Contains(k))
+                    w._keysBuffer.Remove(k);
+                else if (!w._keysBuffer.Contains(k))
+                    w._keysBuffer.Add(k);
+            }
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
@@ -71,10 +78,15 @@ namespace KumaEngine.Windowing
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
         private static void CursorScrollTrampoline(GLFWwindow* window, double xscroll, double yscroll)
         {
-            if (windowPins.TryGetValue((IntPtr)window, out var w))
-            {
+            if (windowPins.TryGetValue((IntPtr)window, out var w)) 
                 w._scrollDelta = new((float)xscroll, (float)yscroll);
-            }
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+        private static void CharacterTrampoline(GLFWwindow* window, uint codePoint)
+        {
+            if (windowPins.TryGetValue((IntPtr)window, out var w))
+                w._characterBuffer += char.ConvertFromUtf32((int)codePoint);
         }
 
         public Glfw3Window _window;
@@ -83,16 +95,19 @@ namespace KumaEngine.Windowing
         private bool _windowResized = true;
         private Vector2 _mouseDelta = Vector2.Zero;
         private Vector2 _scrollDelta = Vector2.Zero;
-
-        List<MouseButton> _heldMouseButtons = new();
+        private string _characterBuffer = "";
+        private HashSet<Key> _keysBuffer = new();
+        private Key[] _keysBufferPrev = [];
         static GLFWgamepadstate[] _gamepadStates = new GLFWgamepadstate[16];
+
+        bool[] _mousePrev = new bool[8];
+        bool[] _mouseCurr = new bool[8];
 
         public event Action<float> Rendering;
         public event Action<GraphicsDevice, ResourceFactory, Swapchain> GraphicsDeviceCreated;
         public event Action GraphicsDeviceDestroyed;
         public event Action Resized;
         public event Action Closing;
-        public event Action<KeyEvent> KeyPressed;
 
         public Vector2 MousePos { get; private set; } = Vector2.Zero;
 
@@ -127,6 +142,7 @@ namespace KumaEngine.Windowing
             _window.SetKeyCallback(&KeyTrampoline);
             _window.SetCursorPosCallback(&CursorPosTrampoline);
             GLFWNative.glfwSetScrollCallback(_window.Handle, &CursorScrollTrampoline);
+            GLFWNative.glfwSetCharCallback(_window.Handle, &CharacterTrampoline);
 
             var size = _window.FramebufferSize;
 
@@ -189,6 +205,7 @@ namespace KumaEngine.Windowing
             while (!_window.ShouldClose)
             {
                 glfw.PollEvents();
+                UpdateInputStates();
 
                 double newElapsed = sw.Elapsed.TotalSeconds;
                 float deltaSeconds = (float)(newElapsed - previousElapsed);
@@ -214,6 +231,7 @@ namespace KumaEngine.Windowing
 
                 _mouseDelta = Vector2.Zero;
                 _scrollDelta = Vector2.Zero;
+                _characterBuffer = "";
             }
 
             Closing?.Invoke();
@@ -224,56 +242,35 @@ namespace KumaEngine.Windowing
             GraphicsDeviceDestroyed?.Invoke();
         }
 
-        protected void OnKeyDown(int key, int scancode, int action, int mods)
+        void UpdateInputStates()
         {
-            Key k = GlfwKeyMap.ToVeldrid(key);
-            ModifierKeys md = GlfwKeyMap.ToVeldridMods(mods);
+            Array.Copy(_mouseCurr, _mousePrev, _mouseCurr.Length);
+            for (int i = 0; i < _mouseCurr.Length; i++)
+                _mouseCurr[i] = _window.GetMouseButton((GLFWMouseButton)i) == GLFWAction.Press;
 
-            bool down = action != (int)GLFWAction.Release;
-            bool repeat = action == (int)GLFWAction.Repeat;
-
-            KeyPressed?.Invoke(new(k, down, md, repeat));
+            _keysBufferPrev = _keysBuffer.ToArray();
         }
+
+        public string GetPressedCharacters() => _characterBuffer;
+        public List<Key> GetPressedKeys() => _keysBuffer.ToList();
 
         public float GetJoystickAxis(int jid, GamepadAxis axis) => 
             _gamepadStates[jid - (int)GLFWJoystick.Joystick1].axes[(int)axis];
 
         public bool IsGamepadPressed(int jid, GamepadButton button) =>
             _gamepadStates[jid - (int)GLFWJoystick.Joystick1].buttons[(int)button] == (int)GLFWAction.Press;
+
         public bool IsKeyPressed(Key key) => _window.GetKey(GlfwKeyMap.ToGlfw(key)) == GLFWAction.Press;
-        public bool IsMouseButtonPressed(MouseButton button) => _window.GetMouseButton(GlfwMouseMap.ToGlfw(button)) == GLFWAction.Press;
 
-        public bool IsMouseButtonDown(MouseButton button)
-        {
-            var down = IsMouseButtonPressed(button);
+        public bool IsKeyDown(Key button) => _keysBuffer.Contains(button) && !_keysBufferPrev.Contains(button);
 
-            if (!down && _heldMouseButtons.Contains(button))
-                _heldMouseButtons.Remove(button);
+        public bool IsKeyReleased(Key button) => !_keysBuffer.Contains(button) && _keysBufferPrev.Contains(button);
 
-            if (down && !_heldMouseButtons.Contains(button))
-            {
-                _heldMouseButtons.Add(button);
-                return true;
-            }
+        static int Idx(MouseButton b) => (int)GlfwMouseMap.ToGlfw(b);
 
-            return false;
-        }
-
-        public bool IsMouseButtonReleased(MouseButton button)
-        {
-            var down = IsMouseButtonPressed(button);
-
-            if (down && !_heldMouseButtons.Contains(button))
-                _heldMouseButtons.Add(button);
-
-            if (!down && _heldMouseButtons.Contains(button))
-            {
-                _heldMouseButtons.Remove(button);
-                return true;
-            }
-
-            return false;
-        }
+        public bool IsMouseButtonPressed(MouseButton b) => _mouseCurr[Idx(b)];
+        public bool IsMouseButtonDown(MouseButton b) => _mouseCurr[Idx(b)] && !_mousePrev[Idx(b)];
+        public bool IsMouseButtonReleased(MouseButton b) => !_mouseCurr[Idx(b)] && _mousePrev[Idx(b)];
 
         public void SetCursorMode(CursorMode mode)
         {

@@ -9,6 +9,7 @@
 	<ServerGarbageCollector>false</ServerGarbageCollector>
 	<ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
 	<TieredPGO>false</TieredPGO>
+	<Platforms>AnyCPU;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
