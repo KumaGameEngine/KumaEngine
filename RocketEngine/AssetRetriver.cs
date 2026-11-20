@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace KumaEngine
 {
@@ -15,7 +16,8 @@ namespace KumaEngine
         Swapchains,
         Textures,
         UI,
-        Audio
+        Audio,
+        Libraries
     }
 
     public static class AssetRetriver
@@ -36,6 +38,17 @@ namespace KumaEngine
             {
                 if (item.TryFetchFile(kind, relative, out var p))
                     return item.OpenFile(p, mode, access);
+            }
+
+            throw new FileNotFoundException($"Could not find '{Path.Combine(kind.ToString(), relative)}'");
+        }
+
+        public static string FetchFile(AssetKind kind, string relative)
+        {
+            foreach (var item in Sources)
+            {
+                if (item.TryFetchFile(kind, relative, out var p))
+                    return p;
             }
 
             throw new FileNotFoundException($"Could not find '{Path.Combine(kind.ToString(), relative)}'");
@@ -70,6 +83,30 @@ namespace KumaEngine
 
             foreach (var item in Sources)
                 files.AddRange(item.ListFiles(kind, relative, filter, recursive, relativePath));
+
+            return files.ToArray();
+        }
+
+        public static string[] GetDirectories(AssetKind kind, bool recursive = false)
+        {
+            SourceThrow();
+
+            List<string> files = new();
+
+            foreach (var item in Sources)
+                files.AddRange(item.ListDirectories(kind, recursive));
+
+            return files.ToArray();
+        }
+
+        public static string[] GetKindDirectories(AssetKind kind)
+        {
+            SourceThrow();
+
+            List<string> files = new();
+
+            foreach (var item in Sources)
+                files.Add(item.GetkindDirectory(kind));
 
             return files.ToArray();
         }

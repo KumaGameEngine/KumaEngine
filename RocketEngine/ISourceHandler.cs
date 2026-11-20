@@ -15,5 +15,7 @@ namespace KumaEngine
             AssetKind kind, string relative, string filter = "*.*", 
             bool recursive = false, bool relativePath = false
         );
+        public string[] ListDirectories(AssetKind kind, bool recursive = false);
+        public string GetkindDirectory(AssetKind kind);
     }
 }

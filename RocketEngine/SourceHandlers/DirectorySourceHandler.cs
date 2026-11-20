@@ -33,6 +33,20 @@ namespace KumaEngine.SourceHandlers
 
             return files.ToArray();
         }
+        public string[] ListDirectories(AssetKind kind, bool recursive = false)
+        {
+            var dir = Path.Combine(Directory, kind.ToString());
+
+            if (!System.IO.Directory.Exists(dir)) return [];
+
+            var files = System.IO.Directory.GetDirectories(
+                dir,"*",
+                recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly
+            ).ToList();
+
+            return files.ToArray();
+        }
+        public string GetkindDirectory(AssetKind kind) => Path.Combine(Directory, kind.ToString());
 
         public Stream OpenFile(string path, FileMode mode, FileAccess access) =>
             File.Open(path, mode, access);

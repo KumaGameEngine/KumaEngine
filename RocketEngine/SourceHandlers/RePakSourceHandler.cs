@@ -23,6 +23,8 @@ namespace KumaEngine.SourceHandlers
             AssetKind kind, string relative, string filter = "*.*",
             bool recursive = false, bool relativePath = false
         ){
+            if (kind == AssetKind.Libraries) return [];
+
             string prefix = Path.Combine(kind.ToString(), relative).Replace('\\', '/').Trim('/');
             prefix = prefix.Length == 0 ? string.Empty : prefix + "/";
 
@@ -58,6 +60,34 @@ namespace KumaEngine.SourceHandlers
             return results.ToArray();
         }
 
+        public string[] ListDirectories(AssetKind kind, bool recursive = false)
+        {
+            if (kind == AssetKind.Libraries) return [];
+
+            string prefix = kind.ToString();
+            prefix = prefix.Length == 0 ? string.Empty : prefix + "/";
+
+            var di = vfs.FileTable.Where(x => x.Key.StartsWith(prefix)).Select(x => x.Key).ToArray();
+
+            List<string> paths = new();
+
+            foreach (var item in di)
+            {
+                var flenght = Path.GetFileName(item).Length;
+
+                var path = item.Remove(item.Length - flenght, flenght);
+
+                if (!recursive)
+                    path = path.Remove(0, prefix.Length).Split('/')[0] + '/';
+
+                if (!paths.Contains(path))
+                    paths.Add(path);
+            }
+
+            return paths.ToArray();
+        }
+        public string GetkindDirectory(AssetKind kind) => kind.ToString() + '/';
+
         public Stream OpenFile(string path, FileMode mode, FileAccess access)
         {
             if (mode != FileMode.Open || access != FileAccess.Read)
@@ -69,6 +99,8 @@ namespace KumaEngine.SourceHandlers
         public bool TryFetchFile(AssetKind kind, string relative, out string path)
         {
             path = Path.Combine(kind.ToString(), relative).Replace('\\', '/');
+
+            if (kind == AssetKind.Libraries) return false;
 
             return vfs.Exists(path);
         }

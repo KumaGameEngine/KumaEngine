@@ -7,8 +7,10 @@ using KumaEngine.Windowing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Veldrid;
@@ -17,6 +19,10 @@ namespace KumaEngine.API
 {
     public static class DefinitionFile
     {
+        static string[] _libExt = [".dll", ".so", ".dylib"];
+
+        static readonly ConcurrentDictionary<string, string> _libPathCache = new();
+
         public static Lua lua;
         public static Game Game;
 
@@ -43,8 +49,6 @@ namespace KumaEngine.API
         {
             lua = new();
 
-            lua.DoString($"package.path = '{Path.Combine("Data","Scripts", "?.lua").Replace("\\", "/")}';");
-
             Vector3API.RegisterMeta(lua);
 
             lua.GetGlobal("package");
@@ -69,6 +73,83 @@ namespace KumaEngine.API
             });
             lua.Pop(2);
 
+            lua.PushSafeCFunction("require", "core", L =>
+            {
+                var lua = Lua.FromIntPtr(L);
+                string name = lua.ToString(1);
+
+                var ext = Path.GetExtension(name).ToLower();
+                bool isNative = _libExt.Contains(ext);
+                string modName = isNative ? name[..^ext.Length] : (ext == ".lua" ? name[..^4] : name);
+                string filepath = modName.Replace('.', '/');
+
+                lua.GetGlobal("package");
+                lua.GetField(-1, "loaded");
+                lua.GetField(-1, modName);
+                if (!lua.IsNil(-1))
+                    return 1;
+                lua.Pop(2);
+
+                lua.GetField(-1, "preload");
+                lua.GetField(-1, modName);
+                bool hasPreload = !lua.IsNil(-1);
+                if (hasPreload)
+                {
+                    lua.PushString(modName);
+                    lua.PushString(":preload:");
+                    if (lua.PCall(2, 1, 0) != LuaStatus.OK)
+                        return lua.Error(lua.ToString(-1));
+                }
+                else lua.Pop(3);
+
+                if (!hasPreload)
+                {
+                    if (isNative)
+                    {
+                        var path = ResolveLibPath(filepath + ext);
+                        var symbol = "luaopen_" + modName.Replace('.', '_');
+
+                        lua.GetGlobal("package");
+                        lua.GetField(-1, "loadlib");
+                        lua.PushString(path);
+                        lua.PushString(symbol);
+                        lua.Call(2, 2);
+
+                        if (!lua.IsFunction(-2))
+                            return lua.Error($"cannot load '{name}' from '{path}': {lua.ToString(-1)}");
+
+                        lua.Pop(1);
+                    }
+                    else
+                    {
+                        var path = filepath + ".lua";
+                        var source = AssetRetriver.ReadAllBytes(AssetKind.Scripts, path);
+
+                        if (lua.LoadBuffer(source, "@" + modName) != LuaStatus.OK)
+                            return lua.Error(lua.ToString(-1));
+                    }
+
+                    lua.PushString(modName);
+                    if (lua.PCall(1, 1, 0) != LuaStatus.OK)
+                        return lua.Error(lua.ToString(-1));
+                }
+
+                if (lua.IsNil(-1))
+                {
+                    lua.Pop(1);
+                    lua.PushBoolean(true);
+                }
+
+                lua.GetGlobal("package");
+                lua.GetField(-1, "loaded");
+                lua.PushCopy(-3);
+                lua.SetField(-2, modName);
+                lua.Pop(2);
+
+                return 1;
+            }, true);
+            lua.SetGlobal("require");
+
             if (lua.DoString(AssetRetriver.ReadAlltext(AssetKind.Scripts,"main.lua")))
             {
                 string errorMsg = lua.ToString(-1);
@@ -76,6 +157,37 @@ namespace KumaEngine.API
 
                 lua.Pop(1);
             }
+        }
+
+        static string ResolveLibPath(string relativePath)
+        {
+            if (_libPathCache.TryGetValue(relativePath, out var cached) && File.Exists(cached))
+                return cached;
+
+            var path = AssetRetriver.FetchFile(AssetKind.Libraries, Path.Combine(GetPlatformString(), relativePath));
+            _libPathCache[relativePath] = path;
+            return path;
+        }
+
+        static string GetPlatformString()
+        {
+            string os =
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? "freebsd" :
+                "unknown";
+
+            string arch = RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X64 => "x64",
+                Architecture.X86 => "x86",
+                Architecture.Arm => "arm",
+                Architecture.Arm64 => "arm64",
+                _ => RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()
+            };
+
+            return $"{os}-{arch}";
         }
 
         public static LuaRegister RegisterFunction(string name, LuaFunction function) => new()
